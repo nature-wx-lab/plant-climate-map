@@ -517,8 +517,8 @@ def main() -> None:
     require(mask.startswith(b"\x89PNG\r\n\x1a\n") and struct.unpack(">II", mask[16:24]) == (2048, 2048),
             "Japan missing-data mask mismatch")
 
-    require("plant-climate-mesh/sitemap.xml" in robots, "robots sitemap mismatch")
-    require("plant-climate-mesh/" in sitemap, "sitemap URL mismatch")
+    require("plant-climate-map/sitemap.xml" in robots, "robots sitemap mismatch")
+    require("plant-climate-map/" in sitemap, "sitemap URL mismatch")
     require("deploy-pages@" in workflow and "privacy_gate.py" in workflow, "verified Pages workflow missing")
     require("permissions: {}" in workflow, "workflow must default to no permissions")
 
