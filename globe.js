@@ -89,6 +89,7 @@
 
     initGL() {
       const gl = this.gl;
+      if (gl.getParameter(gl.MAX_TEXTURE_SIZE) < 4096) throw new Error("globe texture size unavailable");
       const vertex = "attribute vec2 position; void main(){gl_Position=vec4(position,0.,1.);}";
       const fragment = `precision highp float;
         uniform vec2 viewport;
@@ -233,8 +234,8 @@
       context.clearRect(0, 0, o.width, o.height);
       const projection = this.projection();
       const path = d3.geoPath(projection, context);
-      context.beginPath(); path({ type: "Sphere" }); context.fillStyle = "#e3f1f4"; context.fill();
-      context.beginPath(); path(this.countries); context.fillStyle = "#f0f4e8"; context.fill();
+      context.beginPath(); path({ type: "Sphere" }); context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--ocean").trim(); context.fill();
+      context.beginPath(); path(this.countries); context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--land").trim(); context.fill();
       if (this.gl) this.renderGL(width, height, density); else this.renderCPU(width, height, density);
       const vectorPath = d3.geoPath(projection);
       const svg = (className, geometry) => {
