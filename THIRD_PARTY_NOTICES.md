@@ -75,3 +75,11 @@ The optional climate-classification overlay is derived from the 1991–2020, 0.1
 - License: <https://creativecommons.org/publicdomain/zero/1.0/>
 
 Citation: Beck, H. E., McVicar, T. R., Vergopolan, N., et al. (2023), “High-resolution (1 km) Köppen-Geiger maps for 1901–2099 based on constrained CMIP6 projections,” *Scientific Data*, 10, 724.
+
+## Globe projection libraries
+
+D3 geo 3.1.1 and D3 array 3.2.4 are distributed locally, without runtime CDN requests. They provide orthographic projection and clipping. Unmodified release files and license notices are included under `vendor/`.
+
+- D3 geo: https://github.com/d3/d3-geo/tree/v3.1.1
+- D3 array: https://github.com/d3/d3-array/tree/v3.2.4
+- License notices: `vendor/d3-geo-LICENSE.txt`, `vendor/d3-array-LICENSE.txt`

@@ -65,6 +65,13 @@
   const elements = {
     map: document.getElementById("worldMap"),
     mapWrap: document.querySelector(".map-wrap"),
+    globeBase: document.getElementById("globeBase"),
+    globeRaster: document.getElementById("globeRaster"),
+    globeVectors: document.getElementById("globeVectors"),
+    projectionBadge: document.getElementById("projectionBadge"),
+    projectionButtons: document.querySelectorAll("[data-projection]"),
+    focusLocationA: document.getElementById("focusLocationA"),
+    focusLocationB: document.getElementById("focusLocationB"),
     graticule: document.getElementById("graticuleLayer"),
     land: document.getElementById("landLayer"),
     border: document.getElementById("borderLayer"),
@@ -172,6 +179,13 @@
 
   const state = {
     zoom: 1,
+    projection: "flat",
+    globeLongitude: INITIAL_MAP_VIEW.longitude,
+    globeLatitude: INITIAL_MAP_VIEW.latitude,
+    globeUsed: false,
+    pointers: new Map(),
+    pinch: null,
+    japanBox: { x: 0, y: 0, width: 1000, height: 1000 },
     centerX: MAP_SIZE / 2,
     centerY: MAP_SIZE / 2,
     requestSerial: 0,
@@ -217,6 +231,50 @@
     return ((value % MAP_SIZE) + MAP_SIZE) % MAP_SIZE;
   }
 
+  const globe = new PlantGlobe(elements.globeBase, elements.globeRaster, elements.globeVectors);
+
+  function syncGlobe() {
+    const bounds = elements.map.getBoundingClientRect();
+    const outline = state.plantVisible && state.selectedPlant && state.plantOutlines
+      ? state.plantOutlines.outlines[state.plantOutlines.plantKeys[state.selectedPlant.id]]?.rings : null;
+    globe.update({ visible: state.projection === "globe", width: bounds.width, height: bounds.height,
+      zoom: state.zoom, longitude: state.globeLongitude, latitude: state.globeLatitude,
+      countries: state.countries, outline, weatherVisible: state.weatherVisible,
+      climateVisible: state.climateVisible, opacity: Number(elements.weatherLayerOpacity.value) / 100,
+      japanBox: state.japanBox });
+  }
+
+  function setProjection(mode) {
+    if (!["flat", "globe"].includes(mode) || mode === state.projection) return;
+    if (mode === "globe") [state.globeLongitude, state.globeLatitude] = unproject(state.centerX, state.centerY);
+    else [state.centerX, state.centerY] = project(state.globeLongitude, state.globeLatitude);
+    if (mode === "globe" && !state.globeUsed && state.zoom < 2) state.zoom = 1;
+    if (mode === "globe") state.globeUsed = true;
+    state.projection = mode;
+    for (const id of state.pointers.keys()) if (elements.map.hasPointerCapture(id)) elements.map.releasePointerCapture(id);
+    state.pointers.clear();
+    state.drag = null;
+    state.pinch = null;
+    elements.map.classList.remove("is-dragging");
+    elements.mapWrap.classList.toggle("globe-mode", mode === "globe");
+    for (const node of [globe.base, globe.raster, elements.globeVectors]) node.hidden = mode !== "globe";
+    elements.globeVectors.toggleAttribute("hidden", mode !== "globe");
+    elements.projectionButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.projection === mode)));
+    elements.projectionBadge.textContent = mode === "globe"
+      ? "地球儀｜ドラッグで回転｜緯度±85.05°より極側はデータなし"
+      : "Webメルカトル｜表示緯度 ±85.05°｜東西連続";
+    setView(state.zoom);
+  }
+
+  function focusLocation(record) {
+    if (!record?.cell) return;
+    if (state.projection === "globe") {
+      state.globeLongitude = record.cell.longitude;
+      state.globeLatitude = record.cell.latitude;
+      setView(state.zoom);
+    } else setView(state.zoom, ...project(record.cell.longitude, record.cell.latitude));
+  }
+
   function project(longitude, latitude) {
     const safeLatitude = clamp(latitude, -MAX_LAT, MAX_LAT);
     const x = ((longitude + 180) / 360) * MAP_SIZE;
@@ -250,13 +308,26 @@
   function setView(zoom, centerX = state.centerX, centerY = state.centerY) {
     state.zoom = clamp(zoom, 1, 2048);
     const size = MAP_SIZE / state.zoom;
-    state.centerX = wrapWorldX(centerX);
-    state.centerY = clamp(centerY, size / 2, MAP_SIZE - size / 2);
-    elements.map.setAttribute("viewBox", `${state.centerX - size / 2} ${state.centerY - size / 2} ${size} ${size}`);
+    if (state.projection === "globe") {
+      if (arguments.length > 1) [state.globeLongitude, state.globeLatitude] = unproject(centerX, centerY);
+      [state.centerX, state.centerY] = project(state.globeLongitude, state.globeLatitude);
+      const bounds = elements.map.getBoundingClientRect();
+      elements.map.setAttribute("viewBox", `0 0 ${bounds.width} ${bounds.height}`);
+      syncGlobe();
+    } else {
+      state.centerX = wrapWorldX(centerX);
+      state.centerY = clamp(centerY, size / 2, MAP_SIZE - size / 2);
+      elements.map.setAttribute("viewBox", `${state.centerX - size / 2} ${state.centerY - size / 2} ${size} ${size}`);
+    }
     elements.zoomOut.disabled = state.zoom <= 1;
     elements.zoomIn.disabled = state.zoom >= 2048;
-    if (state.selectedCell) drawSelections();
-    updateJapanMap();
+    drawSelections();
+    if (state.projection === "globe" && state.zoom >= 32) {
+      clearTimeout(state.japanViewTimer);
+      // Invalidate an older asynchronous viewport before the next tile render.
+      state.japanMapSerial++;
+      state.japanViewTimer = setTimeout(updateJapanMap, 120);
+    } else updateJapanMap();
   }
 
   function openResultPanel() {
@@ -534,6 +605,8 @@
     elements.layerStatus.textContent = "読み込み中";
     elements.layerStatus.dataset.state = "loading";
     elements.weatherImage.setAttribute("href", path);
+    globe.setSource("world", path);
+    syncGlobe();
     elements.layerButtons.forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.weatherLayer === state.weatherLayer));
     });
@@ -544,6 +617,7 @@
   function setWeatherVisibility(visible) {
     state.weatherVisible = visible;
     elements.weather.toggleAttribute("hidden", !visible);
+    syncGlobe();
     const config = weatherLayerConfig();
     elements.mapLayerLabel.textContent = visible ? `${periodLabel()}｜${config.name}` : "気象レイヤー非表示";
     updateJapanMap();
@@ -665,13 +739,19 @@
   function visibleJapanPrefixes(catalog, left, top, size) {
     const right = left + size;
     const bottom = top + size;
+    const globePath = state.projection === "globe" ? d3.geoPath(globe.projection()) : null;
     return Object.keys(catalog.prefixes).filter((prefix) => {
       const number = Number(prefix);
       const latIndex = Math.floor(number / 100);
       const lonIndex = number % 100;
       const [x1, y1] = project(lonIndex + 100, (latIndex + 1) / 1.5);
       const [x2, y2] = project(lonIndex + 101, latIndex / 1.5);
-      return x2 >= left && x1 <= right && y2 >= top && y1 <= bottom;
+      if (!(x2 >= left && x1 <= right && y2 >= top && y1 <= bottom)) return false;
+      if (!globePath) return true;
+      const west = lonIndex + 100, east = west + 1, south = latIndex / 1.5, north = (latIndex + 1) / 1.5;
+      const bounds = globePath.bounds({ type: "Polygon", coordinates: [[[west, south], [west, north],
+        [east, north], [east, south], [west, south]]] });
+      return Number.isFinite(bounds[0][0]);
     });
   }
 
@@ -680,9 +760,15 @@
     if (!state.weatherVisible) {
       elements.japanImage.removeAttribute("href");
       elements.japanOcclusion.removeAttribute("href");
+      globe.setSource("japan", null);
+      globe.setSource("mask", null);
       return;
     }
     const applyImage = (href, maskHref, box) => {
+      state.japanBox = box;
+      globe.setSource("japan", href);
+      globe.setSource("mask", maskHref);
+      syncGlobe();
       for (const [image, source] of [[elements.japanOcclusion, maskHref], [elements.japanImage, href]]) {
         for (const [attribute, value] of Object.entries(box)) image.setAttribute(attribute, String(value));
         image.setAttribute("href", source);
@@ -696,13 +782,17 @@
     }
     try {
       const catalog = await loadJapanCatalog();
-      const size = MAP_SIZE / state.zoom;
-      const left = state.centerX - size / 2;
-      const top = state.centerY - size / 2;
+      if (serial !== state.japanMapSerial) return;
+      const globeBox = state.projection === "globe" ? globe.mercatorBounds(project) : null;
+      const size = state.projection === "globe" ? (globeBox?.width || 0) : MAP_SIZE / state.zoom;
+      const left = state.projection === "globe" ? (globeBox?.x || 0) : state.centerX - size / 2;
+      const top = state.projection === "globe" ? (globeBox?.y || 0) : state.centerY - size / 2;
       const prefixes = visibleJapanPrefixes(catalog, left, top, size);
       if (!prefixes.length) {
         elements.japanImage.removeAttribute("href");
         elements.japanOcclusion.removeAttribute("href");
+        globe.setSource("japan", null);
+        globe.setSource("mask", null);
         return;
       }
       const chunks = await Promise.all(prefixes.map(state.weatherLayer === "humidity"
@@ -761,6 +851,8 @@
     elements.climateLegend.toggleAttribute("hidden", !state.climateVisible);
     elements.climateToggle.setAttribute("aria-pressed", String(state.climateVisible));
     elements.map.classList.toggle("climate-visible", state.climateVisible);
+    globe.setSource("climate", state.climateVisible ? "./data/koppen-geiger-1991-2020.png" : null);
+    syncGlobe();
   }
 
   function ringToPath(ring) {
@@ -841,6 +933,7 @@
     }
     elements.mapDescription.textContent = "日本の気温・降水・日射・湿度は約1kmの独自推定、日本以外はNASA POWERの気候平均を表示します。"
       + (visible ? `${plant.name}（${plant.scientificName}）のKew掲載地域を黒い太線で概略表示します。線は実際の自生域境界ではありません。` : "");
+    syncGlobe();
   }
 
   function selectPlant(id) {
@@ -882,7 +975,13 @@
   function focusPlantOrigin() {
     const bounds = state.plantOriginBounds;
     if (!bounds) return;
-    setView(state.zoom, (bounds.minX + bounds.maxX) / 2, (bounds.minY + bounds.maxY) / 2);
+    if (state.projection === "globe") {
+      const rings = state.plantOutlines.outlines[state.plantOutlines.plantKeys[state.selectedPlant.id]].rings;
+      const [[west, south], [east, north]] = d3.geoBounds({ type: "MultiLineString", coordinates: rings });
+      state.globeLongitude = ((west + east + (west > east ? 360 : 0)) / 2 + 540) % 360 - 180;
+      state.globeLatitude = (south + north) / 2;
+      setView(state.zoom);
+    } else setView(state.zoom, (bounds.minX + bounds.maxX) / 2, (bounds.minY + bounds.maxY) / 2);
   }
 
   async function loadPlantCatalog() {
@@ -962,6 +1061,7 @@
       }
       elements.land.replaceChildren(fragment);
       elements.border.replaceChildren(borderFragment);
+      syncGlobe();
       if (state.referenceRecord?.cell) {
         state.referenceRecord.location = describeLocation(state.referenceRecord.cell);
       }
@@ -1040,22 +1140,29 @@
     const firstRecord = state.referenceRecord || state.currentRecord;
     const secondRecord = state.referenceRecord && !sameCell(state.currentRecord?.cell, state.referenceRecord.cell)
       ? state.currentRecord : null;
-    if (firstRecord?.cell) {
-      copies.push(...cellCopies(firstRecord.cell, "reference-cell", "reference-point"));
-    }
-    if (secondRecord?.cell) {
-      copies.push(...cellCopies(secondRecord.cell, "selection-cell", "selection-point"));
-    }
-    for (const [record, label, color] of [[firstRecord, "A", "#2463b4"],
-      [secondRecord, "B", "#bd4818"]]) {
+    const isGlobe = state.projection === "globe";
+    elements.focusLocationA.hidden = !isGlobe || !firstRecord;
+    elements.focusLocationB.hidden = !isGlobe || !secondRecord;
+    const globeCell = (cell, cellClass, pointClass) => {
+      const geometry = { type: "Polygon", coordinates: [[[cell.lonMin, cell.latMin], [cell.lonMin, cell.latMax],
+        [cell.lonMax, cell.latMax], [cell.lonMax, cell.latMin], [cell.lonMin, cell.latMin]]] };
+      const path = globe.path(geometry), point = globe.point(cell.longitude, cell.latitude);
+      const nodes = path ? [svgElement("path", { d: path, class: cellClass })] : [];
+      if (point) nodes.push(svgElement("circle", { cx: point[0], cy: point[1], r: 2.2, class: pointClass }));
+      return nodes;
+    };
+    if (firstRecord?.cell) copies.push(...(isGlobe ? globeCell : cellCopies)(firstRecord.cell, "reference-cell", "reference-point"));
+    if (secondRecord?.cell) copies.push(...(isGlobe ? globeCell : cellCopies)(secondRecord.cell, "selection-cell", "selection-point"));
+    for (const [record, label, color] of [[firstRecord, "A", "#2463b4"], [secondRecord, "B", "#bd4818"]]) {
       if (!record) continue;
-      const [x, y] = project(record.cell.longitude, record.cell.latitude);
-      for (const offset of [-MAP_SIZE, 0, MAP_SIZE]) {
-        const marker = svgElement("text", { x: x + offset + 6 / state.zoom, y: y - 5 / state.zoom,
-          fill: color, stroke: "white", "stroke-width": 3 / state.zoom, "paint-order": "stroke",
-          "font-size": 15 / state.zoom, "font-weight": 800, class: "map-location-label" });
-        marker.textContent = label;
-        copies.push(marker);
+      const point = isGlobe ? globe.point(record.cell.longitude, record.cell.latitude) : project(record.cell.longitude, record.cell.latitude);
+      if (!point) continue;
+      const [x, y] = point, scale = isGlobe ? 1 : state.zoom;
+      for (const offset of (isGlobe ? [0] : [-MAP_SIZE, 0, MAP_SIZE])) {
+        const marker = svgElement("text", { x: x + offset + 6 / scale, y: y - 5 / scale,
+          fill: color, stroke: "white", "stroke-width": 3 / scale, "paint-order": "stroke",
+          "font-size": 15 / scale, "font-weight": 800, class: "map-location-label" });
+        marker.textContent = label; copies.push(marker);
       }
     }
     elements.selection.replaceChildren(...copies);
@@ -2427,8 +2534,15 @@
 
   async function selectFromEvent(event) {
     const point = eventPoint(event);
-    if (!point || point.y < 0 || point.y > MAP_SIZE) return;
-    const [longitude, latitude] = unproject(point.x, point.y);
+    if (!point || (state.projection === "flat" && (point.y < 0 || point.y > MAP_SIZE))) return;
+    const coordinate = state.projection === "globe" ? globe.invert(point.x, point.y) : unproject(point.x, point.y);
+    if (!coordinate) return;
+    const [longitude, latitude] = coordinate;
+    if (Math.abs(latitude) > MAX_LAT) {
+      elements.mapGuide.hidden = false;
+      elements.mapGuide.textContent = "この極域には気候データがありません（表示データは緯度±85.05°まで）";
+      return;
+    }
     const serial = ++state.selectionSerial;
     let cell;
     try {
@@ -2447,67 +2561,117 @@
   }
 
   function beginDrag(event) {
-    if (event.button !== 0 || state.drag) return;
+    if (event.button !== 0) return;
+    state.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    elements.map.setPointerCapture(event.pointerId);
+    if (state.pointers.size === 2) {
+      const [a, b] = [...state.pointers.values()];
+      state.pinch = { distance: Math.hypot(a.x - b.x, a.y - b.y), zoom: state.zoom,
+        midpoint: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+        centerX: state.centerX, centerY: state.centerY,
+        longitude: state.globeLongitude, latitude: state.globeLatitude };
+      const rect = elements.map.getBoundingClientRect();
+      state.pinch.coordinate = state.projection === "globe"
+        ? globe.invert(state.pinch.midpoint.x - rect.left, state.pinch.midpoint.y - rect.top) : null;
+      state.drag = null;
+      return;
+    }
+    if (state.pointers.size > 1) return;
     const matrix = elements.map.getScreenCTM();
     if (!matrix) return;
-    state.drag = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      centerX: state.centerX,
-      centerY: state.centerY,
-      scaleX: Math.max(Math.abs(matrix.a), 0.0001),
-      scaleY: Math.max(Math.abs(matrix.d), 0.0001),
-      moved: false,
-    };
-    elements.map.setPointerCapture(event.pointerId);
+    state.drag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY,
+      centerX: state.centerX, centerY: state.centerY,
+      longitude: state.globeLongitude, latitude: state.globeLatitude,
+      scaleX: Math.max(Math.abs(matrix.a), .0001), scaleY: Math.max(Math.abs(matrix.d), .0001), moved: false };
+  }
+
+  function rotateFromDrag(longitude, latitude, deltaX, deltaY) {
+    const bounds = elements.map.getBoundingClientRect();
+    const radius = Math.min(bounds.width, bounds.height) * .46 * state.zoom;
+    state.globeLongitude = ((longitude - deltaX / radius * 180 / Math.PI + 180) % 360 + 360) % 360 - 180;
+    state.globeLatitude = clamp(latitude + deltaY / radius * 180 / Math.PI, -90, 90);
+    setView(state.zoom);
   }
 
   function moveDrag(event) {
+    if (!state.pointers.has(event.pointerId)) return;
+    state.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (state.pinch && state.pointers.size === 2) {
+      const [a, b] = [...state.pointers.values()], pinch = state.pinch;
+      const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const zoom = clamp(pinch.zoom * Math.hypot(a.x - b.x, a.y - b.y) / Math.max(1, pinch.distance), 1, 2048);
+      const bounds = elements.map.getBoundingClientRect();
+      if (state.projection === "globe") {
+        const center = pinch.coordinate && PlantGlobe.coordinates.globeCenterForAnchor(pinch.coordinate,
+          midpoint.x - bounds.left - bounds.width / 2, midpoint.y - bounds.top - bounds.height / 2,
+          Math.min(bounds.width, bounds.height) * .46 * zoom, pinch.latitude);
+        if (center) {
+          [state.globeLongitude, state.globeLatitude] = center;
+          setView(zoom);
+        } else {
+          state.zoom = zoom;
+          rotateFromDrag(pinch.longitude, pinch.latitude, midpoint.x - pinch.midpoint.x, midpoint.y - pinch.midpoint.y);
+        }
+      } else {
+        const scale = Math.min(bounds.width, bounds.height) * pinch.zoom / MAP_SIZE;
+        const nextScale = Math.min(bounds.width, bounds.height) * zoom / MAP_SIZE;
+        const anchorX = pinch.centerX + (pinch.midpoint.x - bounds.left - bounds.width / 2) / scale;
+        const anchorY = pinch.centerY + (pinch.midpoint.y - bounds.top - bounds.height / 2) / scale;
+        setView(zoom, anchorX - (midpoint.x - bounds.left - bounds.width / 2) / nextScale,
+          anchorY - (midpoint.y - bounds.top - bounds.height / 2) / nextScale);
+      }
+      elements.map.classList.add("is-dragging");
+      return;
+    }
     if (!state.drag || event.pointerId !== state.drag.pointerId) return;
-    const deltaX = event.clientX - state.drag.startX;
-    const deltaY = event.clientY - state.drag.startY;
+    const deltaX = event.clientX - state.drag.startX, deltaY = event.clientY - state.drag.startY;
     if (Math.hypot(deltaX, deltaY) > 5) state.drag.moved = true;
     if (!state.drag.moved) return;
     elements.map.classList.add("is-dragging");
-    setView(
-      state.zoom,
-      state.drag.centerX - deltaX / state.drag.scaleX,
-      state.drag.centerY - deltaY / state.drag.scaleY,
-    );
+    if (state.projection === "globe") rotateFromDrag(state.drag.longitude, state.drag.latitude, deltaX, deltaY);
+    else setView(state.zoom, state.drag.centerX - deltaX / state.drag.scaleX, state.drag.centerY - deltaY / state.drag.scaleY);
   }
 
   function endDrag(event) {
-    if (!state.drag || event.pointerId !== state.drag.pointerId) return;
-    const wasMoved = state.drag.moved;
+    const tap = state.drag?.pointerId === event.pointerId && !state.drag.moved && !state.pinch;
+    state.pointers.delete(event.pointerId);
     state.drag = null;
-    elements.map.classList.remove("is-dragging");
+    if (!state.pointers.size) { state.pinch = null; elements.map.classList.remove("is-dragging"); }
+    else if (state.pointers.size === 1 && state.pinch) {
+      const [id, pointer] = [...state.pointers.entries()][0], matrix = elements.map.getScreenCTM();
+      state.pinch = null;
+      if (matrix) state.drag = { pointerId: id, startX: pointer.x, startY: pointer.y,
+        centerX: state.centerX, centerY: state.centerY,
+        longitude: state.globeLongitude, latitude: state.globeLatitude,
+        scaleX: Math.max(Math.abs(matrix.a), .0001), scaleY: Math.max(Math.abs(matrix.d), .0001), moved: true };
+    }
     if (elements.map.hasPointerCapture(event.pointerId)) elements.map.releasePointerCapture(event.pointerId);
-    if (!wasMoved) selectFromEvent(event);
+    if (tap) selectFromEvent(event);
   }
 
   function cancelDrag(event) {
-    if (!state.drag || event.pointerId !== state.drag.pointerId) return;
-    state.drag = null;
-    elements.map.classList.remove("is-dragging");
+    state.pointers.delete(event.pointerId); state.drag = null;
+    if (!state.pointers.size) { state.pinch = null; elements.map.classList.remove("is-dragging"); }
   }
 
   function zoomFromWheel(event) {
     event.preventDefault();
     const point = eventPoint(event);
     if (!point) return;
+    const nextZoom = clamp(state.zoom * (event.deltaY < 0 ? 1.25 : .8), 1, 2048);
+    if (state.projection === "globe") {
+      const coordinate = globe.invert(point.x, point.y), bounds = elements.map.getBoundingClientRect();
+      const center = coordinate && PlantGlobe.coordinates.globeCenterForAnchor(coordinate,
+        point.x - bounds.width / 2, point.y - bounds.height / 2,
+        Math.min(bounds.width, bounds.height) * .46 * nextZoom, state.globeLatitude);
+      if (center) [state.globeLongitude, state.globeLatitude] = center;
+      setView(nextZoom); return;
+    }
     const oldSize = MAP_SIZE / state.zoom;
-    const left = state.centerX - oldSize / 2;
-    const top = state.centerY - oldSize / 2;
-    const anchorX = (point.x - left) / oldSize;
-    const anchorY = (point.y - top) / oldSize;
-    const nextZoom = clamp(state.zoom * (event.deltaY < 0 ? 1.25 : 0.8), 1, 16);
+    const left = state.centerX - oldSize / 2, top = state.centerY - oldSize / 2;
+    const anchorX = (point.x - left) / oldSize, anchorY = (point.y - top) / oldSize;
     const nextSize = MAP_SIZE / nextZoom;
-    setView(
-      nextZoom,
-      point.x + (0.5 - anchorX) * nextSize,
-      point.y + (0.5 - anchorY) * nextSize,
-    );
+    setView(nextZoom, point.x + (.5 - anchorX) * nextSize, point.y + (.5 - anchorY) * nextSize);
   }
 
   const overviewResize = typeof ResizeObserver !== "undefined" ? new ResizeObserver(drawClimateOverview) : null;
@@ -2570,6 +2734,7 @@
     elements.weatherImage.style.opacity = String(opacity);
     elements.japanImage.style.opacity = String(opacity);
     elements.weatherLayerOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
+    syncGlobe();
   });
   elements.toggleLayerPanel.addEventListener("click", () => {
     const expanded = elements.layerPanel.classList.toggle("is-open");
@@ -2608,7 +2773,18 @@
   elements.map.addEventListener("wheel", zoomFromWheel, { passive: false });
   elements.zoomIn.addEventListener("click", () => setView(state.zoom * 2));
   elements.zoomOut.addEventListener("click", () => setView(state.zoom / 2));
-  elements.resetView.addEventListener("click", () => setView(1, MAP_SIZE / 2, MAP_SIZE / 2));
+  elements.resetView.addEventListener("click", () => {
+    if (state.projection === "globe") {
+      state.globeLongitude = INITIAL_MAP_VIEW.longitude;
+      state.globeLatitude = INITIAL_MAP_VIEW.latitude;
+      setView(1);
+    } else setView(1, MAP_SIZE / 2, MAP_SIZE / 2);
+  });
+  elements.projectionButtons.forEach((button) => button.addEventListener("click", () => setProjection(button.dataset.projection)));
+  elements.focusLocationA.addEventListener("click", () => focusLocation(state.referenceRecord || state.currentRecord));
+  elements.focusLocationB.addEventListener("click", () => focusLocation(state.referenceRecord && state.currentRecord));
+  const mapResize = new ResizeObserver(() => { if (state.projection === "globe") setView(state.zoom); });
+  mapResize.observe(elements.map);
   elements.climateToggle.addEventListener("click", toggleClimateLayer);
   elements.setReference.addEventListener("click", setReferenceFromCurrent);
   elements.toggleComparison.addEventListener("click", toggleComparison);

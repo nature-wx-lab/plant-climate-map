@@ -19,6 +19,12 @@ CLIMATE_LAYER_FILES = tuple(
 DEPLOY_FILES = (
     "404.html",
     "app.js",
+    "globe.js",
+    "vendor/d3-array-3.2.4.min.js",
+    "vendor/d3-geo-3.1.1.min.js",
+    "vendor/d3-array-LICENSE.txt",
+    "vendor/d3-geo-LICENSE.txt",
+
     "data/koppen-geiger-1991-2020.png",
     "data/world-50m.geojson",
     "data/plants.json",

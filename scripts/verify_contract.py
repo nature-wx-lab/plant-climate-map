@@ -34,6 +34,12 @@ SOURCE_FILES = {
     "README.md",
     "THIRD_PARTY_NOTICES.md",
     "app.js",
+    "globe.js",
+    "vendor/d3-array-3.2.4.min.js",
+    "vendor/d3-geo-3.1.1.min.js",
+    "vendor/d3-array-LICENSE.txt",
+    "vendor/d3-geo-LICENSE.txt",
+
     "data/koppen-geiger-1991-2020.png",
     "data/world-50m.geojson",
     "data/plants.json",
@@ -56,6 +62,12 @@ SOURCE_FILES = {
 DEPLOY_FILES = {
     "404.html",
     "app.js",
+    "globe.js",
+    "vendor/d3-array-3.2.4.min.js",
+    "vendor/d3-geo-3.1.1.min.js",
+    "vendor/d3-array-LICENSE.txt",
+    "vendor/d3-geo-LICENSE.txt",
+
     "data/koppen-geiger-1991-2020.png",
     "data/world-50m.geojson",
     "data/plants.json",
@@ -79,6 +91,83 @@ def all_coordinates(value: object):
     elif isinstance(value, list):
         for child in value:
             yield from all_coordinates(child)
+
+
+
+def verify_globe_math() -> None:
+    """Check actual globe helpers, spherical clipping, raster fallback and gestures."""
+    program = r'''
+const assert = require("node:assert/strict"), fs = require("node:fs"), vm = require("node:vm");
+const root = process.argv[1];
+const sandbox = {window:{}, console, Math, Map, Float32Array, Uint8Array};
+vm.createContext(sandbox);
+for (const file of ["vendor/d3-array-3.2.4.min.js", "vendor/d3-geo-3.1.1.min.js", "globe.js"])
+  vm.runInContext(fs.readFileSync(root + "/" + file, "utf8"), sandbox);
+const Globe = sandbox.window.PlantGlobe;
+const {globeForward:forward, globeInverse:inverse, globeCenterForAnchor:anchor} = Globe.coordinates;
+const close = (a,b) => assert.ok(Math.abs(a-b)<1e-7, a+" != "+b);
+assert.equal(forward(180,0,100,0,0), null);
+assert.equal(inverse(100.01,0,100,0,0), null);
+close(inverse(0,0,100,179,90)[1],90);
+for (const center of [[0,0],[146,34],[179,-25],[-179,70],[0,-90]]) {
+  const projection = sandbox.d3.geoOrthographic().translate([0,0]).scale(100).rotate([-center[0],-center[1]]);
+  for (const coordinate of [center,[0,0],[139.76,35.68],[151,-34],[-179,45],[179,-45]]) {
+    const point = forward(...coordinate,100,...center);
+    if (!point) continue;
+    const expected = projection(coordinate); close(point[0],expected[0]); close(point[1],expected[1]);
+    const restored = inverse(...point,100,...center);
+    if (Math.abs(coordinate[1])<89.999 && Math.hypot(...point)<99.999) {
+      close(((restored[0]-coordinate[0]+540)%360)-180,0); close(restored[1],coordinate[1]);
+    }
+  }
+}
+for (const camera of [[146,34],[179,-25],[0,75]]) {
+  const coordinate = inverse(20,-15,100,...camera);
+  const centered = anchor(coordinate,20,-15,200,camera[1]);
+  assert.ok(centered); const point = forward(...coordinate,200,...centered);
+  close(point[0],20); close(point[1],-15);
+}
+assert.equal(anchor([0,0],200,0,100,0),null);
+const projection = sandbox.d3.geoOrthographic().translate([0,0]).scale(100).rotate([0,0]).clipAngle(90);
+const path = sandbox.d3.geoPath(projection);
+assert.equal(path({type:"LineString",coordinates:[[170,0],[175,5]]}),null);
+const horizon = path({type:"LineString",coordinates:[[80,0],[100,0]]});
+assert.ok(horizon && !/NaN|Infinity/.test(horizon));
+const image = (rgba) => ({width:2,height:2,data:Uint8Array.from([...rgba,...rgba,...rgba,...rgba])});
+const fallback = Object.create(Globe.prototype);
+fallback.options = {width:4,height:4,zoom:1,longitude:0,latitude:0,opacity:.5,weatherVisible:true,climateVisible:false};
+fallback.cpu = {createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData:(p)=>{fallback.output=p.data;}};
+let textures = {world:image([200,40,20,255])}; fallback.pixels=(key)=>textures[key]||null;
+fallback.renderCPU(4,4,1); assert.equal(fallback.output[23],128); assert.equal(fallback.output[20],200);
+fallback.options.weatherVisible=false; fallback.renderCPU(4,4,1); assert.ok(fallback.output.every(v=>v===0));
+fallback.options.weatherVisible=true; textures.mask=image([248,250,248,255]);
+fallback.renderCPU(4,4,1); assert.deepEqual(Array.from(fallback.output.slice(20,24)),[248,250,248,255]);
+textures.japan=image([20,200,40,255]); fallback.renderCPU(4,4,1);
+assert.deepEqual(Array.from(fallback.output.slice(20,24)),[134,225,144,255]);
+fallback.options.latitude=90; fallback.options.zoom=10000; fallback.renderCPU(4,4,1);
+assert.ok(fallback.output.every(v=>v===0),"polar cap must not sample Mercator edge values");
+// Exercise actual pointer handlers with a DOM-sized map and two distinct pointer IDs.
+const app=fs.readFileSync(root+"/app.js","utf8");
+const names=["clamp","beginDrag","moveDrag","endDrag","rotateFromDrag"];
+const functions=names.map(name=>app.match(new RegExp("^  function "+name+"\\([\\s\\S]*?^  }","m"))[0]).join("\n");
+const state={projection:"globe",zoom:1,centerX:500,centerY:500,globeLongitude:146,globeLatitude:34,pointers:new Map(),pinch:null,drag:null};
+const map={getBoundingClientRect:()=>({width:400,height:600,left:0,top:0}),getScreenCTM:()=>({a:1,d:1}),
+  setPointerCapture:()=>{},hasPointerCapture:()=>true,releasePointerCapture:()=>{},classList:{add:()=>{},remove:()=>{}}};
+let views=0,taps=0;
+const setView=(zoom,x,y)=>{state.zoom=zoom;if(x!==undefined){state.centerX=x;state.centerY=y;}views++;};
+const globe={invert:(x,y)=>inverse(x-200,y-300,184,...[state.globeLongitude,state.globeLatitude])};
+const api=new Function("state","elements","globe","PlantGlobe","setView","selectFromEvent","MAP_SIZE",
+  functions+"\nreturn {"+names.join(",")+"};")(state,{map},globe,Globe,setView,()=>taps++,1000);
+const event=(id,x,y)=>({pointerId:id,button:0,clientX:x,clientY:y});
+api.beginDrag(event(1,150,300));api.beginDrag(event(2,250,300));api.moveDrag(event(2,350,300));
+assert.equal(state.zoom,2);assert.ok(views>0);assert.equal(state.pointers.size,2);
+api.endDrag(event(2,350,300));assert.ok(state.drag&&state.drag.moved);assert.equal(state.pinch,null);
+api.moveDrag(event(1,160,310));api.endDrag(event(1,160,310));assert.equal(taps,0);assert.equal(state.pointers.size,0);
+state.projection="flat";state.zoom=1;api.beginDrag(event(3,150,300));api.beginDrag(event(4,250,300));
+api.moveDrag(event(4,350,300));assert.equal(state.zoom,2);close(state.centerX,437.5);
+console.log("GLOBE_COORDINATES_CLIPPING_FALLBACK_GESTURES_OK");
+'''
+    subprocess.run(["node", "-e", program, str(ROOT)], check=True)
 
 
 def verify_comparison_math() -> None:
@@ -251,6 +340,10 @@ def verify_plant_catalog(app: str) -> None:
 
 
 def main() -> None:
+    require(hashlib.sha256((ROOT / 'vendor/d3-array-3.2.4.min.js').read_bytes()).hexdigest() == '80aa70d0cd17dabddf6d056494ea17926a45a69da8b7850220aace331bad671d', "projection vendor bytes changed")
+    require(hashlib.sha256((ROOT / 'vendor/d3-array-LICENSE.txt').read_bytes()).hexdigest() == '3e6849627f74ff73c257a3ae1efb574015d94fc1035c05ec3c15805165efcbc4', "projection vendor bytes changed")
+    require(hashlib.sha256((ROOT / 'vendor/d3-geo-3.1.1.min.js').read_bytes()).hexdigest() == '23e574f1e8d4716d622bce45356a379b66a277162b145f5f147e4c8daefb73d2', "projection vendor bytes changed")
+    require(hashlib.sha256((ROOT / 'vendor/d3-geo-LICENSE.txt').read_bytes()).hexdigest() == '3e3edc1224eec9c39cd26491a21304a62883c1e5b6a65c5283ccc7a6cc94baee', "projection vendor bytes changed")
     require(PUBLIC_FILES == DEPLOY_FILES, 'public verifier file allowlist differs from deployment')
     actual_files = {
         path.relative_to(ROOT).as_posix()
@@ -272,8 +365,8 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20260926-panel-drag\" defer></script>" in index, "versioned local deferred script missing")
-    require('href="./styles.css?v=20260926-panel-drag"' in index, "versioned local stylesheet missing")
+    require("<script src=\"./app.js?v=20260928-globe\" defer></script>" in index, "versioned local deferred script missing")
+    require('href="./styles.css?v=20260928-globe"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
     require("耐寒性・栽培可否の判定ではありません" in index, "reference rating disclaimer missing")
@@ -528,6 +621,8 @@ def main() -> None:
 
     subprocess.run(["node", "--check", str(ROOT / "app.js")], check=True)
     verify_comparison_math()
+    verify_globe_math()
+    subprocess.run(["node", "--check", str(ROOT / "globe.js")], check=True)
     print(json.dumps({
         "status": "ok",
         "source_files": len(actual_files),

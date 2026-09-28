@@ -18,8 +18,11 @@
   <meta name="twitter:card" content="summary">
   <title>植物気候マップ｜Nature Wx Lab</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2318675b'/%3E%3Cpath d='M32 51V28M32 35C19 34 14 25 14 14c12 0 20 6 18 21zm0-2c13-1 18-10 18-21-12 0-20 6-18 21z' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css?v=20260926-panel-drag">
-  <script src="./app.js?v=20260926-panel-drag" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=20260928-globe">
+  <script src="./vendor/d3-array-3.2.4.min.js" defer></script>
+  <script src="./vendor/d3-geo-3.1.1.min.js" defer></script>
+  <script src="./globe.js?v=20260928-globe" defer></script>
+  <script src="./app.js?v=20260928-globe" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -146,6 +149,10 @@
               <option value="12">12月</option>
             </select>
           </label>
+        <div class="projection-buttons" role="group" aria-label="地図の表示方式">
+          <button type="button" data-projection="flat" aria-pressed="true">平面</button>
+          <button type="button" data-projection="globe" aria-pressed="false">地球儀</button>
+        </div>
         <details id="mapSettings" class="map-settings"><summary>表示設定</summary><div id="layerPanelBody" class="layer-panel-body">
         <section class="active-layer-card">
           <span id="activeLayerPeriod">年平均</span>
@@ -166,6 +173,8 @@
         </div></details>
       </div>
       <div class="map-wrap">
+        <canvas id="globeBase" class="globe-surface" aria-hidden="true" hidden></canvas>
+        <canvas id="globeRaster" class="globe-surface" aria-hidden="true" hidden></canvas>
         <svg id="worldMap" viewBox="0 0 1000 1000" role="img" aria-label="世界地図" aria-describedby="mapDescription">
           <desc id="mapDescription">日本の気温・降水・日射・湿度は約1kmの独自推定、日本以外はNASA POWERの気候平均を表示します。</desc>
           <defs>
@@ -185,9 +194,10 @@
               <g id="plantOriginLayer" aria-hidden="true"></g>
             </g>
           </defs>
-          <use href="#worldLayer" x="-1000" aria-hidden="true"></use>
-          <use href="#worldLayer" x="0" aria-hidden="true"></use>
-          <use href="#worldLayer" x="1000" aria-hidden="true"></use>
+          <use class="flat-world" href="#worldLayer" x="-1000" aria-hidden="true"></use>
+          <use class="flat-world" href="#worldLayer" x="0" aria-hidden="true"></use>
+          <use class="flat-world" href="#worldLayer" x="1000" aria-hidden="true"></use>
+          <g id="globeVectors" hidden></g>
           <g id="selectionLayer" aria-hidden="true"></g>
         </svg>
 
@@ -195,6 +205,8 @@
           <button id="zoomOut" type="button" aria-label="地図を縮小">−</button>
           <button id="zoomIn" type="button" aria-label="地図を拡大">＋</button>
           <button id="resetView" type="button">全体</button>
+          <button id="focusLocationA" type="button" aria-label="地点Aを地図の中央へ" hidden>Aへ</button>
+          <button id="focusLocationB" type="button" aria-label="地点Bを地図の中央へ" hidden>Bへ</button>
         </div>
         <div id="mapLayerLabel" class="sr-only">年平均｜平均気温</div>
         <p id="mapGuide" class="map-guide">地図をクリックして気候を確認 <span>地点を固定すると、2地点を比較できます</span></p>
@@ -208,7 +220,7 @@
           <div id="climateLegendItems" class="climate-legend-items"></div>
           <p>A 熱帯　B 乾燥帯　C 温帯　D 冷帯　E 寒帯</p>
         </section>
-        <div class="map-badge">Webメルカトル｜表示緯度 ±85.05°｜東西連続</div>
+        <div id="projectionBadge" class="map-badge">Webメルカトル｜表示緯度 ±85.05°｜東西連続</div>
 
         <button id="openResults" class="drawer-tab" type="button" aria-controls="resultPanel" aria-expanded="false" hidden>気候データを開く</button>
 
