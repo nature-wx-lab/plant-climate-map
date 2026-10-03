@@ -212,20 +212,20 @@ assert.equal(layer.children.filter(n=>n.attrs.class==="geography-label country-l
 api.drawLabels(layer,sample,{width:200,height:200,zoom:1,point,visible:{countries:false}});
 assert.equal(layer.children.length,1);assert.equal(layer.children[0].children.length,0);
 api.drawLabels(layer,sample,{width:200,height:200,zoom:1,point:()=>[[188,100]],disk:{x:100,y:100,radius:90},visible:{countries:true}});
-assert.equal(layer.children.length,2,"keep a visible limb label using an in-viewport callout");
+assert.equal(layer.children.length,1,"omit text that cannot fit inside the globe limb");
 api.drawLabels(layer,sample,{width:200,height:200,zoom:1,point:()=>[],visible:{countries:true}});
 assert.equal(layer.children.length,1,"far hemisphere labels must be absent");
 api.drawLabels(layer,{countries:[],capitals:[],regions:[{id:"east-asia",name:"東アジア",color:"#2b619d",point:[112,39],members:[]}]},
   {width:200,height:200,zoom:32,point:()=>[],centerRegion:"east-asia",visible:{regions:true}});
 assert.equal(layer.children.length,2,"keep the central region labelled when zoomed past its label anchor");
-const verifyBoxes=(requireAll=false)=>{
+const verifyBoxes=()=>{
   const labels=layer.children.filter(n=>String(n.attrs.class).includes("geography-label"));
   const boxes=labels.map(n=>n.attrs["data-box"].split(",").map(Number));
   for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){
     const a=boxes[i],b=boxes[j];
     assert.ok(!(a[0]<b[2]&&a[2]>b[0]&&a[1]<b[3]&&a[3]>b[1]),"labels must not overlap");
   }
-  if(requireAll)assert.equal(Number(layer.attrs["data-visible-labels"]),labels.length,"retain all visible names at regional zoom");
+  assert.ok(labels.every(n=>n.children.every(child=>child.name!=="line")),"never add remote label callouts");
   return labels;
 };
 const coincident={countries:[{name:"中華人民共和国",code:"CHN",point:[116,40]}],
@@ -233,7 +233,15 @@ const coincident={countries:[{name:"中華人民共和国",code:"CHN",point:[116
   regions:[{id:"east-asia",name:"東アジア",color:"#2b619d",point:[116,40],members:[]}]};
 api.drawLabels(layer,coincident,{width:640,height:480,point:()=>[[320,240]],centerCountry:"CHN",centerRegion:"east-asia",
   visible:{countries:true,capitals:true,regions:true}});
-assert.equal(verifyBoxes(true).length,3,"keep country, region and capital at a coincident anchor");
+assert.equal(verifyBoxes().length,3,"keep country, region and capital at a coincident anchor");
+api.drawLabels(layer,coincident,{width:640,height:480,zoom:16,point:()=>[[320,240]],
+  visible:{countries:true,capitals:true,regions:true}});
+assert.equal(verifyBoxes().length,3,"a region must not replace its country even without a central country hint");
+const dense={countries:Array.from({length:50},(_,i)=>({name:"密集した国"+i,code:"D"+i,point:[0,0]})),capitals:[],regions:[]};
+for(const zoom of [1,16,1]){
+  api.drawLabels(layer,dense,{width:640,height:480,zoom,point:()=>[[320,240]],visible:{countries:true}});
+  assert.ok(verifyBoxes().length<=3,"thin crowded names at every zoom rather than filling empty space");
+}
 const camera=[116.4,39.9];
 for(const mode of ["flat","globe"])for(const zoom of [1,4,16,64,16,4,1]){
   const projection=mode==="flat"?sandbox.d3.geoMercator().center(camera).translate([320,240]).scale(480/(2*Math.PI)*zoom)
@@ -242,10 +250,12 @@ for(const mode of ["flat","globe"])for(const zoom of [1,4,16,64,16,4,1]){
   const point=(lon,lat)=>mode==="globe"&&sandbox.d3.geoDistance(camera,[lon,lat])>Math.PI/2?[]:[projection([lon,lat])];
   api.drawLabels(layer,data,{width:640,height:480,zoom,point,projections:[projection],centerCountry:"CHN",centerRegion:"east-asia",
     disk:mode==="globe"?{x:320,y:240,radius:480*.46*zoom}:null,visible:{countries:true,capitals:true,regions:true}});
-  const labels=verifyBoxes(zoom>=4);
-  assert.ok(labels.some(n=>n.attrs.class==="geography-label country-label"&&n.attrs["data-code"]==="CHN"),mode+" China must survive zoom "+zoom);
-  assert.ok(labels.some(n=>n.attrs.class==="geography-label region-label"&&n.attrs["data-code"]==="east-asia"),mode+" East Asia must survive zoom "+zoom);
-  assert.ok(labels.some(n=>n.attrs.class==="geography-label capital-label"&&n.attrs["data-code"]==="CHN"),mode+" Beijing must survive zoom "+zoom);
+  const labels=verifyBoxes();
+  if(zoom>=4){
+    assert.ok(labels.some(n=>n.attrs.class==="geography-label country-label"&&n.attrs["data-code"]==="CHN"),mode+" China must survive regional zoom "+zoom);
+    assert.ok(labels.some(n=>n.attrs.class==="geography-label region-label"&&n.attrs["data-code"]==="east-asia"),mode+" East Asia must survive regional zoom "+zoom);
+    assert.ok(labels.some(n=>n.attrs.class==="geography-label capital-label"&&n.attrs["data-code"]==="CHN"),mode+" Beijing must survive regional zoom "+zoom);
+  }else assert.ok(labels.length<Number(layer.attrs["data-visible-labels"]),"thin dense names in the whole-world view");
   if(mode==="globe")assert.ok(!labels.some(n=>n.attrs["data-code"]==="BRA"),"do not show the opposite hemisphere");
 }
 console.log("GEOGRAPHY_BOUNDARIES_CAPITALS_LABEL_CLIPPING_OK");
@@ -448,8 +458,8 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261003-labels\" defer></script>" in index, "versioned local deferred script missing")
-    require('href="./styles.css?v=20261003-labels"' in index, "versioned local stylesheet missing")
+    require("<script src=\"./app.js?v=20261003-label-spacing\" defer></script>" in index, "versioned local deferred script missing")
+    require('href="./styles.css?v=20261003-label-spacing"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
     require("耐寒性・栽培可否の判定ではありません" in index, "reference rating disclaimer missing")

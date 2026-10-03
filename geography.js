@@ -82,9 +82,6 @@
   function drawLabels(layer, data, options) {
     const { width, height, point, visible, disk } = options;
     const fragment = document.createDocumentFragment(), occupied = [];
-    const identity = (kind, code, name) => `${kind}:${code || ""}:${name}`;
-    const previous = new Set(Array.from(layer.children).filter((item) => item.getAttribute("data-name"))
-      .map((item) => identity(item.getAttribute("data-kind"), item.getAttribute("data-code"), item.getAttribute("data-name"))));
     const markers = node("g", { class: "capital-markers" });
     fragment.append(markers);
     const inside = (p, margin = 0) => p && p.every(Number.isFinite) && p[0] >= margin && p[1] >= margin && p[0] <= width - margin && p[1] <= height - margin
@@ -127,7 +124,7 @@
       if (country.feature && projections.length) anchors = projections.map(({ projection, path }) => {
         const projected = projection(country.point);
         return primary.find((p) => Math.hypot(p[0] - projected[0], p[1] - projected[1]) < .1)
-          || landAnchor(country, projection, path);
+          || ((options.zoom >= 4 || country.code === options.centerCountry) ? landAnchor(country, projection, path) : null);
       }).filter(Boolean);
       if (!anchors.length && country.code && country.code === options.centerCountry) anchors = [[width / 2, height / 2]];
       countryPoints.set(country, anchors);
@@ -150,49 +147,38 @@
       occupied.push([p[0] - 5, p[1] - 5, p[0] + 5, p[1] + 5]);
       entries.push({ name: capital.name, kind: "capital", code: capital.code, rank: capital.rank || 0, anchors: [p] });
     }
-    // Keep the country and region under the camera first; all three categories share the
-    // same placement search, so a region label cannot replace a country or capital name.
+    // The central country keeps its place before the region is positioned nearby.
+    // Dense labels are omitted; never move them to unrelated empty space on the map.
     const central = (entry) => Boolean(entry.code && (entry.code === options.centerCountry || entry.code === options.centerRegion));
-    const known = (entry) => previous.has(identity(entry.kind, entry.code, entry.name));
-    entries.sort((a, b) => Number(central(b)) - Number(central(a))
-      || Number(b.kind === "region") - Number(a.kind === "region") || Number(known(b)) - Number(known(a)) || (a.rank || 0) - (b.rank || 0));
+    const centralCountry = (entry) => entry.kind === "country" && central(entry);
+    const preferred = options.zoom >= 4 ? "country" : "region";
+    entries.sort((a, b) => Number(centralCountry(b)) - Number(centralCountry(a)) || Number(central(b)) - Number(central(a))
+      || (central(a) && central(b) ? Number(b.kind === "capital") - Number(a.kind === "capital") : 0)
+      || Number(b.kind === preferred) - Number(a.kind === preferred) || (a.rank || 0) - (b.rank || 0));
     let placed = 0;
     const text = ({ name, kind, color, code, anchors }) => {
       const size = kind === "region" ? 13 : kind === "country" ? 12 : 11;
       measure.font = `${kind === "capital" ? 500 : 700} ${size}px "Hiragino Sans", "Yu Gothic", sans-serif`;
       const w = measure.measureText(name).width + (kind === "region" ? 16 : 6), h = size + 9;
       if (w > width - 6 || h > height - 6) return false;
-      let box, anchor, x, y;
+      let box, x, y;
       const fit = (p, dx, dy) => {
         x = Math.max(w / 2 + 3, Math.min(width - w / 2 - 3, p[0] + dx));
         y = Math.max(h / 2 + 3, Math.min(height - h / 2 - 3, p[1] + dy));
         box = [x - w / 2, y - h / 2, x + w / 2, y + h / 2];
+        if (![[box[0], box[1]], [box[2], box[1]], [box[0], box[3]], [box[2], box[3]]].every((corner) => inside(corner, 3))) return false;
         if (occupied.some((b) => intersects([box[0] - 2, box[1] - 2, box[2] + 2, box[3] + 2], b))) return false;
-        anchor = p;
         return true;
       };
       const offsets = kind === "capital" ? [[w / 2 + 9, 0], [-w / 2 - 9, 0], [0, -h - 3], [0, h + 3]] : [[0, 0]];
-      for (let ring = 1; ring <= 2; ring++) {
-        const dx = ring * (w / 2 + 8), dy = ring * (h + 5);
-        offsets.push([0, -dy], [0, dy], [-dx, 0], [dx, 0], [-dx, -dy], [dx, -dy], [-dx, dy], [dx, dy]);
-      }
-      let found = anchors.some((p) => offsets.some(([dx, dy]) => fit(p, dx, dy)));
-      if (!found && (options.zoom >= 4 || previous.has(identity(kind, code, name)))) {
-        // Crowded areas can use a callout elsewhere in the viewport, joined to the real anchor.
-        const p = anchors[0], candidates = [];
-        for (let cy = h / 2 + 3; cy <= height - h / 2 - 3; cy += h + 5)
-          for (let cx = w / 2 + 3; cx <= width - w / 2 - 3; cx += Math.max(16, w / 2)) candidates.push([cx, cy]);
-        candidates.sort((a, b) => Math.hypot(a[0] - p[0], a[1] - p[1]) - Math.hypot(b[0] - p[0], b[1] - p[1]));
-        found = candidates.some(([cx, cy]) => fit(p, cx - p[0], cy - p[1]));
-      }
+      if (kind === "region" || (kind === "country" && (options.zoom >= 4 || code === options.centerCountry)))
+        offsets.push([0, -h - 5], [0, h + 5]);
+      if (kind === "region") offsets.push([0, -2 * (h + 5)], [0, 2 * (h + 5)]);
+      const found = anchors.some((p) => offsets.some(([dx, dy]) => fit(p, dx, dy)));
       if (!found) return false;
       occupied.push(box);
       const group = node("g", { class: `geography-label ${kind}-label`, "data-name": name, "data-code": code || "",
         "data-kind": kind, "data-box": box.join(",") });
-      const end = [Math.max(box[0], Math.min(box[2], anchor[0])), Math.max(box[1], Math.min(box[3], anchor[1]))];
-      if (Math.hypot(end[0] - anchor[0], end[1] - anchor[1]) > 3) group.append(node("line", {
-        x1: anchor[0], y1: anchor[1], x2: end[0], y2: end[1], class: "label-leader", stroke: color || (kind === "capital" ? "#235263" : "#536e60"),
-      }));
       if (kind === "region") group.append(node("rect", { x: box[0], y: box[1], width: w, height: h, rx: 4, stroke: color }));
       const label = node("text", { x, y, "text-anchor": "middle", "dominant-baseline": "central", "font-size": size });
       if (color) label.setAttribute("fill", color);
