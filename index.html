@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'self' https://power.larc.nasa.gov; img-src 'self' data:; script-src 'self'; style-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; media-src 'none'; worker-src 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'self' https://power.larc.nasa.gov; img-src 'self' data: https://cyberjapandata.gsi.go.jp; script-src 'self'; style-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; media-src 'none'; worker-src 'none'; upgrade-insecure-requests">
   <meta name="referrer" content="no-referrer">
   <meta name="robots" content="index,follow">
   <meta name="description" content="植物のふるさとと、育てる場所の気候を比べる。世界地図で1991〜2020年の気温・降水量・日射量・相対湿度の気候平均を確認するNature Wx Labの試作ツールです。">
@@ -18,12 +18,13 @@
   <meta name="twitter:card" content="summary">
   <title>植物気候マップ｜Nature Wx Lab</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2318675b'/%3E%3Cpath d='M32 51V28M32 35C19 34 14 25 14 14c12 0 20 6 18 21zm0-2c13-1 18-10 18-21-12 0-20 6-18 21z' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css?v=20261003-label-spacing">
+  <link rel="stylesheet" href="./styles.css?v=20261003-context-maps">
   <script src="./vendor/d3-array-3.2.4.min.js" defer></script>
   <script src="./vendor/d3-geo-3.1.1.min.js" defer></script>
   <script src="./geography.js?v=20261003-label-spacing" defer></script>
-  <script src="./globe.js?v=20261003-equator-toggle" defer></script>
-  <script src="./app.js?v=20261003-label-spacing" defer></script>
+  <script src="./globe.js?v=20261003-context-maps" defer></script>
+  <script src="./map-context.js?v=20261003-context-maps" defer></script>
+  <script src="./app.js?v=20261003-context-maps" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -178,16 +179,29 @@
           <small id="activeLayerMeta">1991–2020年の気候平均｜0.5°×0.625°格子</small>
         </section>
 
+        <section class="layer-control-group compact-settings" aria-label="地図と地形の表示設定">
+          <label class="map-select-field" for="baseMapMode">地図の種類
+            <select id="baseMapMode"><option value="standard">標準</option><option value="detail">詳細地図</option><option value="photo">航空写真・衛星画像</option></select>
+          </label>
+          <label class="range-field" for="baseMapOpacity"><span>地図の濃さ <output id="baseMapOpacityValue">100%</output></span><input id="baseMapOpacity" type="range" min="0" max="100" value="100" step="1"></label>
+          <label class="check-field"><input id="terrainToggle" type="checkbox">地形を重ねる</label>
+          <label class="map-select-field" for="terrainStyle">地形の色
+            <select id="terrainStyle"><option value="mono">白黒（陰影）</option><option value="color">カラー（標高と陰影）</option></select>
+          </label>
+          <label class="range-field" for="terrainOpacity"><span>地形の濃さ <output id="terrainOpacityValue">40%</output></span><input id="terrainOpacity" type="range" min="0" max="100" value="40" step="1"></label>
+          <p class="layer-panel-note">詳細地図・航空写真の細かな表示は日本国内。海外は広域の地図・衛星画像です。地形は白黒の陰影または標高の色分けです。</p>
+          <p id="mapContextStatus" class="layer-panel-note" role="status"></p>
+        </section>
         <section class="layer-control-group compact-settings" aria-label="レイヤー表示設定">
           <label class="check-field"><input id="weatherLayerToggle" type="checkbox" checked>気象レイヤーを表示</label>
           <label class="range-field" for="weatherLayerOpacity">
             <span>気象レイヤーの濃さ <output id="weatherLayerOpacityValue">82%</output></span>
-            <input id="weatherLayerOpacity" type="range" min="20" max="100" value="82" step="1">
+            <input id="weatherLayerOpacity" type="range" min="0" max="100" value="82" step="1">
           </label>
           <button id="climateToggle" class="secondary-layer-button" type="button" aria-controls="climateLegend" aria-pressed="false">気候区分を重ねる</button>
         </section>
 
-        <p class="layer-panel-note">日本は約1kmの独自推定、日本以外はNASA POWER。日本の白抜きは欠測です。</p>
+        <p class="layer-panel-note">日本は約1kmの独自推定、日本以外はNASA POWER。日本の欠測格子では気象の色を表示しません。</p>
         </div></details>
       </div>
       <div class="map-wrap">
@@ -196,13 +210,20 @@
         <svg id="worldMap" viewBox="0 0 1000 1000" role="img" aria-label="世界地図" aria-describedby="mapDescription">
           <desc id="mapDescription">日本の気温・降水・日射・湿度は約1kmの独自推定、日本以外はNASA POWERの気候平均を表示します。赤線は赤道（緯度0度）です。</desc>
           <defs>
+            <clipPath id="contextWorldClip"><rect x="0" y="0" width="1000" height="1000"></rect></clipPath>
+            <filter id="japanMaskBlack" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"></feColorMatrix></filter>
+            <mask id="worldWeatherMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="1000">
+              <rect x="0" y="0" width="1000" height="1000" fill="white"></rect>
+              <image id="japanOcclusion" class="japan-occlusion" filter="url(#japanMaskBlack)" x="0" y="0" width="1000" height="1000" preserveAspectRatio="none"></image>
+            </mask>
             <g id="worldLayer">
               <rect class="ocean" x="0" y="0" width="1000" height="1000"></rect>
               <g id="graticuleLayer" aria-hidden="true"></g>
               <g id="landLayer" aria-hidden="true"></g>
+              <g id="baseMapTiles" clip-path="url(#contextWorldClip)" aria-hidden="true"></g>
+              <g id="terrainTiles" clip-path="url(#contextWorldClip)" aria-hidden="true"></g>
               <g id="weatherLayer" aria-hidden="true">
-                <image id="weatherImage" class="weather-raster" x="0" y="0" width="1000" height="1000" preserveAspectRatio="none"></image>
-                <image id="japanOcclusion" class="japan-occlusion" x="0" y="0" width="1000" height="1000" preserveAspectRatio="none"></image>
+                <image id="weatherImage" class="weather-raster" mask="url(#worldWeatherMask)" x="0" y="0" width="1000" height="1000" preserveAspectRatio="none"></image>
                 <image id="japanImage" class="japan-raster" x="0" y="0" width="1000" height="1000" preserveAspectRatio="none"></image>
               </g>
               <g id="climateLayer" aria-hidden="true" hidden>
@@ -244,6 +265,7 @@
           <div id="climateLegendItems" class="climate-legend-items"></div>
           <p>A 熱帯　B 乾燥帯　C 温帯　D 冷帯　E 寒帯</p>
         </section>
+        <div id="mapAttribution" class="map-attribution" hidden><a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">地理院タイル</a><span id="mapAttributionDetail"></span></div>
         <div id="projectionBadge" class="map-badge">Webメルカトル｜表示緯度 ±85.05°｜東西連続</div>
 
         <button id="openResults" class="drawer-tab" type="button" aria-controls="resultPanel" aria-expanded="false" hidden>気候データを開く</button>
@@ -409,11 +431,13 @@
       <p>地図の枠（地点Aは青・比較Bは橙）は、日本の有効なメッシュ内では約1kmの3次メッシュ、日本以外ではNASA POWER気象格子の中心に合わせた約0.5°×0.625°の範囲です。白い小点は格子中心です。日本以外の気温・降水量・相対湿度は選択した枠に対応する元格子の空間平均です。日射量は同じ中心点に対応する別の1°×1°格子です。日本の湿度は独自推定の約1km値です。</p>
       <p>気候区分：<a href="https://doi.org/10.6084/m9.figshare.c.6395666" target="_blank" rel="noopener noreferrer">Beckほか（2023）ケッペン＝ガイガー気候区分</a>の1991–2020年・0.1°版（CC0）をWebメルカトルへ再投影しています。区分境界付近には不確実性があります。</p>
       <p>地図境界・国名・周辺都市：<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener noreferrer">Natural Earth</a> 1:50m Admin 0 Countries / 1:10m Populated Places Simple v5.1.2（Public Domain）。格子中心が属する国・地域と、主要都市・行政中心点からの概算位置を表示します。行政区画の判定ではなく、境界・名称表示は法的立場を示すものではありません。</p>
+      <p>詳細地図・航空写真・地形：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">国土地理院 地理院タイル</a>。日本の地形カラーは色別標高図、海外は全球DEMを独自に色分けし全球陰影起伏図を重ねています。表示範囲の画像だけを取得します。海外の画像は広域用で、拡大しても細部は増えません。航空写真は最新の現況を保証しません。</p>
+      <details class="map-source-credits"><summary>地図画像の原典・クレジット</summary><p>海底地形：GEBCO, BODC on behalf of IOC and IHO (2003)／海上保安庁許可 第292502号。世界の海岸線：米国NIMA VMAP0（地理院タイル）。衛星画像：NASA LP DAAC / USGS EROS、Landsat 8 (GSI, TSIC, GEO Grid/AIST), USGS。GRUS画像：© Axelspace。色別標高図の海域部は海上保安庁海洋情報部の資料を使用して作成。</p></details>
       <p>本ツールは広域の気候傾向を確認する試作版です。日本の約1kmは格子の大きさであり、実測精度を意味しません。特に日射は利用できる観測所が少なく、地形・沿岸・都市の細かな差も再現しません。栽培可否の断定には使用しないでください。</p>
     </section>
     <section>
       <h2>プライバシー</h2>
-      <p>Cookie、アクセス解析、現在地取得、入力情報の保存は行いません。比較基準はページを開いている間だけ保持し、再読み込みで消去されます。日本のメッシュをクリックしてもNASA POWERへは接続しません。日本以外の地点をクリックすると、気象格子の中心座標と通常の通信情報がNASA POWERへ送信されます。</p>
+      <p>Cookie、アクセス解析、現在地取得、入力情報の保存は行いません。比較基準はページを開いている間だけ保持し、再読み込みで消去されます。日本のメッシュをクリックしてもNASA POWERへは接続しません。詳細地図・航空写真・地形を有効にすると、表示範囲のタイル番号と通常の通信情報が国土地理院へ送信されます。日本以外の地点をクリックすると、気象格子の中心座標と通常の通信情報がNASA POWERへ送信されます。</p>
     </section>
   </footer>
 </body>

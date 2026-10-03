@@ -26,6 +26,7 @@ EXPECTED_FILES = {
     "404.html",
     "app.js",
     "globe.js",
+    "map-context.js",
     "geography.js",
     "data/geography.json",
     "vendor/d3-array-3.2.4.min.js",

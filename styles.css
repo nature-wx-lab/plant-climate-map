@@ -359,7 +359,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 }
 
 .weather-raster {
-  opacity: 0.82;
+  opacity: 1;
   pointer-events: none;
   image-rendering: pixelated;
 }
@@ -370,7 +370,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 }
 
 .japan-raster {
-  opacity: 0.82;
+  opacity: 1;
   pointer-events: none;
   image-rendering: pixelated;
 }
@@ -1503,3 +1503,13 @@ footer p + p { margin-top: 5px; }
 @media (min-width: 761px) and (max-width: 950px) and (max-height: 600px) {
   .weather-layer-buttons button, .projection-buttons button { min-height: 40px; }
 }
+
+/* Context-map settings stay inside the existing popover. */
+.map-select-field { display: grid; gap: 6px; font-size: .73rem; }
+.map-select-field select { width: 100%; min-height: 36px; padding: 5px 8px; border: 1px solid #baccbf; border-radius: 5px; color: #375b46; background: #fff; }
+#baseMapTiles, #terrainTiles { pointer-events: none; }
+.map-attribution { position: absolute; z-index: 4; left: 12px; bottom: 48px; max-width: calc(100% - 280px); padding: 3px 6px; border-radius: 3px; background: #fffffff0; color: #39534e; font-size: .6rem; line-height: 1.4; }
+.map-attribution a { color: inherit; }
+.map-attribution span { margin-left: 5px; }
+.map-source-credits { margin-top: 5px; font-size: .7rem; }
+@media (max-width: 700px) { .map-attribution, .globe-mode .map-attribution { left: 8px; bottom: 174px; max-width: calc(100% - 16px); } }

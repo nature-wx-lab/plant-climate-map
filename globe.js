@@ -94,12 +94,17 @@
       const vertex = "attribute vec2 position; void main(){gl_Position=vec4(position,0.,1.);}";
       const fragment = `precision highp float;
         uniform vec2 viewport;
-        uniform float radius, longitude, latitude, opacity, weatherVisible, climateVisible;
-        uniform vec4 japanBox;
-        uniform sampler2D worldImage, japanImage, japanMask, climateImage;
+        uniform float radius, longitude, latitude, opacity, weatherVisible, climateVisible, baseMapOpacity, terrainOpacity;
+        uniform vec4 japanBox, baseMapBox, terrainBox;
+        uniform sampler2D worldImage, japanImage, japanMask, climateImage, baseMapImage, terrainImage;
         const float PI=3.141592653589793;
         vec4 over(vec4 top, vec4 bottom) {
           return vec4(top.rgb*top.a + bottom.rgb*(1.-top.a), top.a+bottom.a*(1.-top.a));
+        }
+        vec4 atlas(sampler2D image, vec2 uv, vec4 box, float strength) {
+          vec2 local=vec2(mod(uv.x*1000.-box.x+1000.,1000.)/box.z,(uv.y*1000.-box.y)/box.w);
+          if(strength<=0.||any(lessThan(local,vec2(0.)))||any(greaterThan(local,vec2(1.))))return vec4(0.);
+          vec4 pixel=texture2D(image,local);pixel.a*=strength;return pixel;
         }
         void main(){
           vec2 p=(gl_FragCoord.xy-viewport*.5)/radius;
@@ -109,15 +114,18 @@
           float lon=longitude+atan(p.x,z*cos(latitude)-p.y*sin(latitude));
           if(abs(lat)>1.48442223){gl_FragColor=vec4(0.);return;}
           vec2 uv=vec2(fract(lon/(2.*PI)+.5),.5-log(tan(PI*.25+lat*.5))/(2.*PI));
-          vec4 color=vec4(0.);
+          vec4 color=over(atlas(baseMapImage,uv,baseMapBox,baseMapOpacity),vec4(0.));
+          color=over(atlas(terrainImage,uv,terrainBox,terrainOpacity),color);
           if(weatherVisible>.5){
-            vec4 world=texture2D(worldImage,uv);world.a*=opacity;color=over(world,color);
+            vec4 weather=over(texture2D(worldImage,uv),vec4(0.));
             vec2 local=(uv*1000.-japanBox.xy)/japanBox.zw;
             if(all(greaterThanEqual(local,vec2(0.)))&&all(lessThanEqual(local,vec2(1.)))){
               vec4 mask=texture2D(japanMask,local);
-              color=over(mask,color);
-              vec4 japan=texture2D(japanImage,local);japan.a*=opacity;color=over(japan,color);
+              weather*=1.-mask.a;
+              weather=over(texture2D(japanImage,local),weather);
             }
+            weather*=opacity;
+            color=weather+color*(1.-weather.a);
           }
           if(climateVisible>.5){vec4 climate=texture2D(climateImage,uv);climate.a*=.66;color=over(climate,color);}
           gl_FragColor=vec4(color.a>0.?color.rgb/color.a:vec3(0.),color.a);
@@ -139,19 +147,24 @@
       const position = gl.getAttribLocation(this.program, "position");
       gl.enableVertexAttribArray(position); gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
       this.uniforms = {};
-      for (const name of ["viewport", "radius", "longitude", "latitude", "opacity", "weatherVisible", "climateVisible", "japanBox"])
+      for (const name of ["viewport", "radius", "longitude", "latitude", "opacity", "weatherVisible", "climateVisible", "japanBox", "baseMapBox", "terrainBox", "baseMapOpacity", "terrainOpacity"])
         this.uniforms[name] = gl.getUniformLocation(this.program, name);
-      this.textures = ["world", "japan", "mask", "climate"].map((key, index) => {
+      this.textures = ["world", "japan", "mask", "climate", "baseMap", "terrain"].map((key, index) => {
         gl.activeTexture(gl.TEXTURE0 + index);
         const texture = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, index >= 4 ? gl.LINEAR : gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, index >= 4 ? gl.LINEAR : gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
-        gl.uniform1i(gl.getUniformLocation(this.program, ["worldImage", "japanImage", "japanMask", "climateImage"][index]), index);
+        gl.uniform1i(gl.getUniformLocation(this.program, ["worldImage", "japanImage", "japanMask", "climateImage", "baseMapImage", "terrainImage"][index]), index);
         return { key, texture, uploaded: null };
       });
+    }
+
+    setImage(key, image) {
+      this.slots[key] = { image };
+      this.request();
     }
 
     setSource(key, url) {
@@ -236,7 +249,9 @@
       const projection = this.projection();
       const path = d3.geoPath(projection, context);
       context.beginPath(); path({ type: "Sphere" }); context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--ocean").trim(); context.fill();
+      context.globalAlpha = o.mapOpacity ?? 1;
       context.beginPath(); path(this.countries); context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--land").trim(); context.fill();
+      context.globalAlpha = 1;
       if (this.gl) this.renderGL(width, height, density); else this.renderCPU(width, height, density);
       const vectorPath = d3.geoPath(projection);
       const svg = (className, geometry) => {
@@ -245,6 +260,7 @@
         return node;
       };
       const nodes = [svg("graticule", this.graticule), svg("country-border", this.countries)];
+      for (const node of nodes) node.style.opacity = String(o.mapOpacity ?? 1);
       if (o.regions) nodes.push(PlantGeography.regionPaths(o.regions, vectorPath));
       if (o.equatorVisible) nodes.push(svg("equator-halo", this.equator), svg("equator-line", this.equator));
       if (o.outline) {
@@ -265,6 +281,11 @@
       gl.uniform1f(u.climateVisible, o.climateVisible ? 1 : 0);
       const box = o.japanBox || { x: 0, y: 0, width: 1000, height: 1000 };
       gl.uniform4f(u.japanBox, box.x, box.y, box.width, box.height);
+      for (const key of ["baseMap", "terrain"]) {
+        const atlasBox = o[`${key}Box`] || { x: 0, y: 0, width: 1000, height: 1000 };
+        gl.uniform4f(u[`${key}Box`], atlasBox.x, atlasBox.y, atlasBox.width, atlasBox.height);
+        gl.uniform1f(u[`${key}Opacity`], o[`${key}Opacity`] || 0);
+      }
       this.textures.forEach((entry, index) => {
         const image = this.slots[entry.key]?.image || null;
         gl.activeTexture(gl.TEXTURE0 + index); gl.bindTexture(gl.TEXTURE_2D, entry.texture);
@@ -294,6 +315,7 @@
       const sin = Math.sin(o.latitude * RAD), cos = Math.cos(o.latitude * RAD), longitude = o.longitude * RAD;
       const world = this.pixels("world"), japan = this.pixels("japan"), mask = this.pixels("mask"), climate = this.pixels("climate");
       const box = o.japanBox || { x: 0, y: 0, width: 1000, height: 1000 };
+      const baseMap = this.pixels("baseMap"), terrain = this.pixels("terrain");
       const sample = (source, u, v) => source && u >= 0 && u <= 1 && v >= 0 && v <= 1
         ? (Math.min(source.height - 1, Math.floor(v * source.height)) * source.width
           + Math.min(source.width - 1, Math.floor(u * source.width))) * 4 : -1;
@@ -316,10 +338,21 @@
             green = source.data[index + 1] * a + green * (1 - a);
             blue = source.data[index + 2] * a + blue * (1 - a); alpha = a + alpha * (1 - a);
           };
+          for (const [key, source] of [["baseMap", baseMap], ["terrain", terrain]]) {
+            const b = o[`${key}Box`] || { x: 0, y: 0, width: 1000, height: 1000 };
+            blend(source, sample(source, ((u * 1000 - b.x + 1000) % 1000) / b.width,
+              (v * 1000 - b.y) / b.height), o[`${key}Opacity`] || 0);
+          }
           if (o.weatherVisible) {
-            blend(world, sample(world, u, v), o.opacity);
+            const under = [red, green, blue, alpha]; red = green = blue = alpha = 0;
+            blend(world, sample(world, u, v), 1);
             const ju = (u * 1000 - box.x) / box.width, jv = (v * 1000 - box.y) / box.height;
-            blend(mask, sample(mask, ju, jv), 1); blend(japan, sample(japan, ju, jv), o.opacity);
+            const m = sample(mask, ju, jv), keep = m < 0 ? 1 : 1 - mask.data[m + 3] / 255;
+            red *= keep; green *= keep; blue *= keep; alpha *= keep;
+            blend(japan, sample(japan, ju, jv), 1);
+            red *= o.opacity; green *= o.opacity; blue *= o.opacity; alpha *= o.opacity;
+            red += under[0] * (1 - alpha); green += under[1] * (1 - alpha); blue += under[2] * (1 - alpha);
+            alpha += under[3] * (1 - alpha);
           }
           if (o.climateVisible) blend(climate, sample(climate, u, v), .66);
           if (alpha) { data[offset] = red / alpha; data[offset + 1] = green / alpha; data[offset + 2] = blue / alpha; data[offset + 3] = alpha * 255; }

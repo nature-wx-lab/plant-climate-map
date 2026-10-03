@@ -87,3 +87,15 @@ D3 geo 3.1.1 and D3 array 3.2.4 are distributed locally, without runtime CDN req
 - D3 geo: https://github.com/d3/d3-geo/tree/v3.1.1
 - D3 array: https://github.com/d3/d3-array/tree/v3.2.4
 - License notices: `vendor/d3-geo-LICENSE.txt`, `vendor/d3-array-LICENSE.txt`
+
+## GSI context maps and terrain
+
+Runtime viewport tiles from the Geospatial Information Authority of Japan (GSI) are optional display layers. No tile files are redistributed in this repository. Detail maps use `std`; aerial/satellite imagery uses `seamlessphoto`; monochrome relief uses Japan `hillshademap` or global `earthhillshade`; color relief uses Japan `relief`. Overseas color relief is our colorization of GSI global RGB elevation tiles (`demgm_png`) with global hillshade. It does not alter the climate or selected-location values.
+
+- Tile catalog, coverage, credit and use guidance: https://maps.gsi.go.jp/development/ichiran.html
+- RGB elevation encoding: https://maps.gsi.go.jp/development/demtile.html
+- Detail and satellite coverage outside Japan is limited to global overview zoom levels. Parent-tile crops retain this source resolution when zoomed further. Missing context tiles remain transparent.
+- Bathymetry: GEBCO, BODC on behalf of IOC and IHO (2003); Japan Coast Guard permission No. 292502. Global shoreline: NIMA VMAP0, as credited by GSI.
+- Satellite imagery: NASA LP DAAC / USGS EROS (https://lpdaac.usgs.gov/data_access); Landsat 8 (GSI, TSIC, GEO Grid/AIST), USGS; GRUS imagery © Axelspace. Ocean relief portions use Japan Coast Guard Hydrographic and Oceanographic Department materials.
+
+GSI and these providers do not endorse this tool. Context maps are geographic imagery, not current observations or climate data. Tile requests include the viewed area tile numbers and ordinary network information; they are made only while the corresponding map or terrain layer has nonzero opacity.

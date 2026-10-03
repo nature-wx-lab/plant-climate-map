@@ -182,6 +182,18 @@
     weatherLayerToggle: document.getElementById("weatherLayerToggle"),
     weatherLayerOpacity: document.getElementById("weatherLayerOpacity"),
     weatherLayerOpacityValue: document.getElementById("weatherLayerOpacityValue"),
+    baseMapMode: document.getElementById("baseMapMode"),
+    baseMapOpacity: document.getElementById("baseMapOpacity"),
+    baseMapOpacityValue: document.getElementById("baseMapOpacityValue"),
+    terrainToggle: document.getElementById("terrainToggle"),
+    terrainStyle: document.getElementById("terrainStyle"),
+    terrainOpacity: document.getElementById("terrainOpacity"),
+    terrainOpacityValue: document.getElementById("terrainOpacityValue"),
+    baseMapTiles: document.getElementById("baseMapTiles"),
+    terrainTiles: document.getElementById("terrainTiles"),
+    mapContextStatus: document.getElementById("mapContextStatus"),
+    mapAttribution: document.getElementById("mapAttribution"),
+    mapAttributionDetail: document.getElementById("mapAttributionDetail"),
     mapLayerLabel: document.getElementById("mapLayerLabel"),
   };
 
@@ -244,6 +256,79 @@
 
   const globe = new PlantGlobe(elements.globeBase, elements.globeRaster, elements.globeVectors);
 
+  const contextAtlases = { baseMap: null, terrain: null };
+  let contextViewTimer;
+  const contextMaps = new PlantMapContext((key, atlas) => {
+    contextAtlases[key] = atlas;
+    const target = key === "baseMap" ? elements.baseMapTiles : elements.terrainTiles;
+    target.replaceChildren();
+    if (atlas) {
+      const href = atlas.image.toDataURL("image/png");
+      for (const shift of [-MAP_SIZE, 0, MAP_SIZE]) target.append(svgElement("image", {
+        x: atlas.box.x + shift, y: atlas.box.y, width: atlas.box.width, height: atlas.box.height,
+        href, preserveAspectRatio: "none" }));
+      target.dataset.tiles = String(atlas.tiles); target.dataset.sources = atlas.sources.join(",");
+    } else { delete target.dataset.tiles; delete target.dataset.sources; }
+    globe.setImage(key, atlas?.image || null);
+    syncGlobe();
+  }, (message) => { elements.mapContextStatus.textContent = message; });
+
+  function contextViewport() {
+    const rect = elements.map.getBoundingClientRect(), density = Math.min(devicePixelRatio || 1, 2);
+    if (state.projection === "flat") {
+      const scale = Math.min(rect.width, rect.height) * state.zoom / MAP_SIZE;
+      const width = rect.width / scale, height = rect.height / scale;
+      return { bounds: { x: width >= MAP_SIZE ? 0 : state.centerX - width / 2,
+        y: state.centerY - height / 2, width: Math.min(width, MAP_SIZE), height }, pixels: MAP_SIZE * scale * density };
+    }
+    const pixels = 2 * Math.PI * Math.min(rect.width, rect.height) * .46 * state.zoom * density;
+    if (state.zoom < 2) return { bounds: { x: 0, y: 0, width: MAP_SIZE, height: MAP_SIZE }, pixels };
+    const points = [];
+    for (let row = 0; row <= 16; row++) for (let col = 0; col <= 16; col++) {
+      const coordinate = globe.invert(rect.width * col / 16, rect.height * row / 16);
+      if (!coordinate || Math.abs(coordinate[1]) > MAX_LAT) continue;
+      const [x, y] = project(...coordinate);
+      points.push([state.centerX + ((x - state.centerX + 1500) % 1000 - 500), y]);
+    }
+    if (!points.length) return { bounds: { x: 0, y: 0, width: MAP_SIZE, height: MAP_SIZE }, pixels };
+    const xs = points.map(p => p[0]), ys = points.map(p => p[1]);
+    const width = Math.max(.00001, Math.max(...xs) - Math.min(...xs)), height = Math.max(.00001, Math.max(...ys) - Math.min(...ys));
+    return { bounds: { x: Math.min(...xs) - width * .02, y: Math.min(...ys) - height * .02,
+      width: Math.min(MAP_SIZE, width * 1.04), height: height * 1.04 }, pixels };
+  }
+
+  function updateContextMaps() {
+    const view = contextViewport();
+    const baseMap = elements.baseMapMode.value !== "standard" && Number(elements.baseMapOpacity.value) > 0 ? elements.baseMapMode.value : null;
+    const terrain = elements.terrainToggle.checked && Number(elements.terrainOpacity.value) > 0 ? elements.terrainStyle.value : null;
+    contextMaps.update(view.bounds, view.pixels, { baseMap, terrain }).catch(() => {
+      elements.mapContextStatus.textContent = "地図画像を読み込めませんでした。しばらくして種類を選び直してください。";
+    });
+  }
+
+  function scheduleContextMaps() {
+    clearTimeout(contextViewTimer);
+    contextViewTimer = setTimeout(updateContextMaps, 120);
+  }
+
+  function applyContextSettings() {
+    const mapOpacity = Number(elements.baseMapOpacity.value) / 100;
+    const terrainOpacity = elements.terrainToggle.checked ? Number(elements.terrainOpacity.value) / 100 : 0;
+    elements.land.style.opacity = String(mapOpacity);
+    elements.border.style.opacity = String(mapOpacity);
+    elements.graticule.style.opacity = String(mapOpacity);
+    elements.baseMapTiles.style.opacity = String(mapOpacity);
+    elements.terrainTiles.style.opacity = String(terrainOpacity);
+    elements.baseMapOpacityValue.textContent = `${Math.round(mapOpacity * 100)}%`;
+    elements.terrainOpacityValue.textContent = `${Math.round(Number(elements.terrainOpacity.value))}%`;
+    const active = (elements.baseMapMode.value !== "standard" && mapOpacity > 0) || terrainOpacity > 0;
+    elements.mapAttribution.hidden = !active;
+    elements.mapAttributionDetail.textContent = elements.baseMapMode.value === "photo"
+      ? "NASA / USGS / GSI・TSIC・AIST / GEBCO / © Axelspace"
+      : "GEBCO / 海上保安庁 / VMAP0";
+    syncGlobe(); updateContextMaps();
+  }
+
   function syncGlobe() {
     const bounds = elements.map.getBoundingClientRect();
     const outline = state.plantVisible && state.selectedPlant && state.plantOutlines
@@ -254,7 +339,11 @@
       regions: state.geographyVisible.regions ? state.geography?.regions : null,
       equatorVisible: state.equatorVisible,
       climateVisible: state.climateVisible, opacity: Number(elements.weatherLayerOpacity.value) / 100,
-      japanBox: state.japanBox });
+      japanBox: state.japanBox,
+      mapOpacity: Number(elements.baseMapOpacity.value) / 100,
+      baseMapOpacity: elements.baseMapMode.value !== "standard" ? Number(elements.baseMapOpacity.value) / 100 : 0,
+      terrainOpacity: elements.terrainToggle.checked ? Number(elements.terrainOpacity.value) / 100 : 0,
+      baseMapBox: contextAtlases.baseMap?.box, terrainBox: contextAtlases.terrain?.box });
   }
 
   function setProjection(mode) {
@@ -319,7 +408,7 @@
   }
 
   function setView(zoom, centerX = state.centerX, centerY = state.centerY) {
-    state.zoom = clamp(zoom, 1, 2048);
+    state.zoom = clamp(zoom, 1, 65536);
     const size = MAP_SIZE / state.zoom;
     if (state.projection === "globe") {
       if (arguments.length > 1) [state.globeLongitude, state.globeLatitude] = unproject(centerX, centerY);
@@ -333,9 +422,10 @@
       elements.map.setAttribute("viewBox", `${state.centerX - size / 2} ${state.centerY - size / 2} ${size} ${size}`);
     }
     elements.zoomOut.disabled = state.zoom <= 1;
-    elements.zoomIn.disabled = state.zoom >= 2048;
+    elements.zoomIn.disabled = state.zoom >= 65536;
     drawSelections();
     drawGeographyLabels();
+    scheduleContextMaps();
     if (state.projection === "globe" && state.zoom >= 32) {
       clearTimeout(state.japanViewTimer);
       // Invalidate an older asynchronous viewport before the next tile render.
@@ -2659,7 +2749,7 @@
     if (state.pinch && state.pointers.size === 2) {
       const [a, b] = [...state.pointers.values()], pinch = state.pinch;
       const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-      const zoom = clamp(pinch.zoom * Math.hypot(a.x - b.x, a.y - b.y) / Math.max(1, pinch.distance), 1, 2048);
+      const zoom = clamp(pinch.zoom * Math.hypot(a.x - b.x, a.y - b.y) / Math.max(1, pinch.distance), 1, 65536);
       const bounds = elements.map.getBoundingClientRect();
       if (state.projection === "globe") {
         const center = pinch.coordinate && PlantGlobe.coordinates.globeCenterForAnchor(pinch.coordinate,
@@ -2718,7 +2808,7 @@
     event.preventDefault();
     const point = eventPoint(event);
     if (!point) return;
-    const nextZoom = clamp(state.zoom * (event.deltaY < 0 ? 1.25 : .8), 1, 2048);
+    const nextZoom = clamp(state.zoom * (event.deltaY < 0 ? 1.25 : .8), 1, 65536);
     if (state.projection === "globe") {
       const coordinate = globe.invert(point.x, point.y), bounds = elements.map.getBoundingClientRect();
       const center = coordinate && PlantGlobe.coordinates.globeCenterForAnchor(coordinate,
@@ -2790,12 +2880,15 @@
     setWeatherVisibility(elements.weatherLayerToggle.checked);
   });
   elements.weatherLayerOpacity.addEventListener("input", () => {
-    const opacity = clamp(Number(elements.weatherLayerOpacity.value) / 100, 0.2, 1);
-    elements.weatherImage.style.opacity = String(opacity);
-    elements.japanImage.style.opacity = String(opacity);
+    const opacity = clamp(Number(elements.weatherLayerOpacity.value) / 100, 0, 1);
+    elements.weather.style.opacity = String(opacity);
     elements.weatherLayerOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
     syncGlobe();
   });
+  for (const control of [elements.baseMapMode, elements.terrainToggle, elements.terrainStyle])
+    control.addEventListener("change", applyContextSettings);
+  for (const control of [elements.baseMapOpacity, elements.terrainOpacity])
+    control.addEventListener("input", applyContextSettings);
   elements.toggleLayerPanel.addEventListener("click", () => {
     const expanded = elements.layerPanel.classList.toggle("is-open");
     elements.toggleLayerPanel.setAttribute("aria-expanded", String(expanded));
@@ -2905,7 +2998,7 @@
   window.addEventListener("pointerup", endResultPanelResize);
   window.addEventListener("pointercancel", endResultPanelResize);
   window.addEventListener("resize", applyResultPanelPosition);
-  elements.weatherImage.style.opacity = String(Number(elements.weatherLayerOpacity.value) / 100);
-  elements.japanImage.style.opacity = String(Number(elements.weatherLayerOpacity.value) / 100);
+  window.addEventListener("resize", scheduleContextMaps);
+  elements.weather.style.opacity = String(Number(elements.weatherLayerOpacity.value) / 100);
   updateWeatherLayer();
 })();

@@ -35,6 +35,7 @@ SOURCE_FILES = {
     "THIRD_PARTY_NOTICES.md",
     "app.js",
     "globe.js",
+    "map-context.js",
     "geography.js",
     "data/geography.json",
     "vendor/d3-array-3.2.4.min.js",
@@ -66,6 +67,7 @@ DEPLOY_FILES = {
     "404.html",
     "app.js",
     "globe.js",
+    "map-context.js",
     "geography.js",
     "data/geography.json",
     "vendor/d3-array-3.2.4.min.js",
@@ -97,6 +99,48 @@ def all_coordinates(value: object):
         for child in value:
             yield from all_coordinates(child)
 
+
+
+def verify_map_context() -> None:
+    """Test actual tile coordinates, bounded requests, elevation and stale responses."""
+    program = r'''
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const pending=[],context={drawImage(){},getImageData(){return {data:new Uint8ClampedArray(256*256*4)};},clearRect(){},putImageData(){}};
+class FakeImage {set src(url){this.url=url;if(url)pending.push(this);}}
+const sandbox={window:{},Image:FakeImage,document:{createElement:()=>({getContext:()=>context})},Math,Map,Set,Promise,JSON,setTimeout,clearTimeout};
+vm.createContext(sandbox);vm.runInContext(fs.readFileSync(process.argv[1]+"/map-context.js","utf8"),sandbox);
+const Maps=sandbox.window.PlantMapContext,{plan,source,elevation,elevationColor}=Maps.coordinates;
+const tokyo={x:Math.floor((139.76+180)/360*2**18),y:Math.floor((.5-Math.log(Math.tan(Math.PI/4+35.68*Math.PI/360))/(2*Math.PI))*2**18),z:18};
+for(const mode of ["detail","photo","mono","color"]) {
+  const item=source(mode,tokyo);assert.ok(item.url.startsWith("https://cyberjapandata.gsi.go.jp/xyz/"));
+  assert.equal(item.z,{detail:18,photo:18,mono:16,color:15}[mode]);
+  const global=source(mode,tokyo,true);assert.equal(global.z,8);
+  assert.ok(global.crop.every(v=>Number.isFinite(v)&&v>=0&&v<=256));
+}
+assert.equal(source("detail",{x:2**18+tokyo.x,y:tokyo.y,z:18}).url,source("detail",tokyo).url);
+assert.equal(source("color",{x:2**17,y:2**17,z:18}).id,"demgm_png");
+for(const bounds of [{x:0,y:0,width:1000,height:1000},{x:995,y:350,width:10,height:20},{x:-2,y:350,width:5,height:5},{x:888.1,y:393.1,width:.04,height:.03}]) {
+ const layout=plan(bounds,100000000);assert.ok(layout.tiles.length<=64);assert.ok(layout.right-layout.x<=16);assert.ok(layout.bottom-layout.y<=16);
+ assert.ok(layout.box.x<=bounds.x);assert.ok(layout.box.x+layout.box.width>=bounds.x+bounds.width-1e-8);
+ assert.ok(layout.box.y<=bounds.y&&layout.box.y+layout.box.height>=bounds.y+bounds.height-1e-8);
+}
+assert.equal(plan({x:0,y:1001,width:1000,height:10},1000).tiles.length,0);
+assert.equal(elevation(0,39,16),100);assert.equal(elevation(255,216,240),-100);assert.equal(elevation(128,0,0),null);
+assert.equal(elevationColor(null),null);assert.notDeepEqual(Array.from(elevationColor(0)),Array.from(elevationColor(2000)));
+(async()=>{
+ const atlases=[],messages=[],maps=new Maps((key,atlas)=>atlases.push([key,atlas]),m=>messages.push(m));
+ const old=maps.update({x:0,y:0,width:1000,height:1000},1000,{baseMap:"detail",terrain:null});
+ const recent=maps.update({x:888.1,y:393.1,width:.01,height:.01},2**25,{baseMap:"photo",terrain:null});
+ assert.ok(maps.active<=8);
+ for(let round=0;round<20;round++){for(const img of pending.splice(0))img.onload();await new Promise(r=>setImmediate(r));}
+ await Promise.all([old,recent]);assert.equal(atlases.filter(([,a])=>a).length,1,"obsolete viewport must never replace the recent atlas");
+ assert.ok(atlases.find(([,a])=>a)[1].sources.includes("seamlessphoto"));
+ const before=pending.length;await maps.update({x:0,y:0,width:1000,height:1000},1000,{baseMap:null,terrain:null});
+ assert.equal(pending.length,before);assert.equal(messages.at(-1),"");
+ assert.equal(atlases.at(-1)[1],null);console.log("CONTEXT_TILES_BOUNDS_COVERAGE_ELEVATION_STALE_RESPONSES_OK");
+})().catch(error=>{console.error(error);process.exitCode=1;});
+'''
+    subprocess.run(["node", "-e", program, str(ROOT)], check=True)
 
 
 def verify_globe_math() -> None:
@@ -146,9 +190,19 @@ let textures = {world:image([200,40,20,255])}; fallback.pixels=(key)=>textures[k
 fallback.renderCPU(4,4,1); assert.equal(fallback.output[23],128); assert.equal(fallback.output[20],200);
 fallback.options.weatherVisible=false; fallback.renderCPU(4,4,1); assert.ok(fallback.output.every(v=>v===0));
 fallback.options.weatherVisible=true; textures.mask=image([248,250,248,255]);
-fallback.renderCPU(4,4,1); assert.deepEqual(Array.from(fallback.output.slice(20,24)),[248,250,248,255]);
+fallback.renderCPU(4,4,1); assert.ok(fallback.output.every(v=>v===0),"Japan missing cells erase NASA weather without white paint");
+textures.baseMap=image([100,100,100,255]);fallback.options.baseMapOpacity=1;
+fallback.renderCPU(4,4,1);assert.deepEqual(Array.from(fallback.output.slice(20,24)),[100,100,100,255]);
 textures.japan=image([20,200,40,255]); fallback.renderCPU(4,4,1);
-assert.deepEqual(Array.from(fallback.output.slice(20,24)),[134,225,144,255]);
+assert.deepEqual(Array.from(fallback.output.slice(20,24)),[60,150,70,255]);
+fallback.options.opacity=0;fallback.renderCPU(4,4,1);
+assert.deepEqual(Array.from(fallback.output.slice(20,24)),[100,100,100,255]);
+fallback.options.baseMapOpacity=0;fallback.renderCPU(4,4,1);assert.ok(fallback.output.every(v=>v===0));
+textures.terrain=image([20,40,60,255]);fallback.options.terrainOpacity=.5;
+fallback.renderCPU(4,4,1);assert.deepEqual(Array.from(fallback.output.slice(20,24)),[20,40,60,128]);
+fallback.options.baseMapOpacity=1;fallback.options.baseMapBox={x:950,y:0,width:100,height:1000};
+fallback.options.terrainOpacity=0;fallback.options.longitude=-179;fallback.options.zoom=100;
+fallback.renderCPU(4,4,1);assert.deepEqual(Array.from(fallback.output.slice(20,24)),[100,100,100,255],"atlas crosses the antimeridian");
 fallback.options.latitude=90; fallback.options.zoom=10000; fallback.renderCPU(4,4,1);
 assert.ok(fallback.output.every(v=>v===0),"polar cap must not sample Mercator edge values");
 // Exercise actual pointer handlers with a DOM-sized map and two distinct pointer IDs.
@@ -455,11 +509,15 @@ def main() -> None:
     robots = (ROOT / "robots.txt").read_text(encoding="utf-8")
     sitemap = (ROOT / "sitemap.xml").read_text(encoding="utf-8")
 
+    require("img-src 'self' data: https://cyberjapandata.gsi.go.jp;" in index, "GSI must be the only external image origin")
+    require(all(f'id="{key}"' in index for key in ('baseMapMode','baseMapOpacity','terrainToggle','terrainStyle','terrainOpacity','mapAttribution')), "context-map controls missing")
+    require('value="mono"' in index and 'type="range" min="0" max="100" value="100"' in index, "map controls defaults/range missing")
+    require('id="worldWeatherMask"' in index and 'mask="url(#worldWeatherMask)"' in index, "Japan mask must erase weather rather than paint over context maps")
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261003-label-spacing\" defer></script>" in index, "versioned local deferred script missing")
-    require('href="./styles.css?v=20261003-label-spacing"' in index, "versioned local stylesheet missing")
+    require("<script src=\"./app.js?v=20261003-context-maps\" defer></script>" in index, "versioned local deferred script missing")
+    require('href="./styles.css?v=20261003-context-maps"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
     require("耐寒性・栽培可否の判定ではありません" in index, "reference rating disclaimer missing")
@@ -714,9 +772,11 @@ def main() -> None:
 
     subprocess.run(["node", "--check", str(ROOT / "app.js")], check=True)
     verify_comparison_math()
+    verify_map_context()
     verify_globe_math()
     verify_geography()
     subprocess.run(["node", "--check", str(ROOT / "globe.js")], check=True)
+    subprocess.run(["node", "--check", str(ROOT / "map-context.js")], check=True)
     print(json.dumps({
         "status": "ok",
         "source_files": len(actual_files),
