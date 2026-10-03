@@ -63,6 +63,7 @@
       this.slots = {};
       this.frame = 0;
       this.graticule = d3.geoGraticule().step([30, 20])();
+      this.equator = { type: "LineString", coordinates: Array.from({ length: 73 }, (_, i) => [-180 + i * 5, 0]) };
       this.gl = raster.getContext("webgl", { alpha: true, premultipliedAlpha: false, antialias: false });
       if (this.gl) {
         try { this.initGL(); } catch (error) { this.gl = null; }
@@ -245,6 +246,7 @@
       };
       const nodes = [svg("graticule", this.graticule), svg("country-border", this.countries)];
       if (o.regions) nodes.push(PlantGeography.regionPaths(o.regions, vectorPath));
+      nodes.push(svg("equator-halo", this.equator), svg("equator-line", this.equator));
       if (o.outline) {
         const geometry = { type: "MultiLineString", coordinates: o.outline };
         nodes.push(svg("plant-origin-halo", geometry), svg("plant-origin-outline", geometry));

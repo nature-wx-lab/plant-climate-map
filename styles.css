@@ -343,6 +343,14 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   vector-effect: non-scaling-stroke;
 }
 
+.equator-halo, .equator-line {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.equator-halo { stroke: #fff; stroke-opacity: .8; stroke-width: 3.6; }
+.equator-line { stroke: #d12435; stroke-width: 2; }
+
 .land {
   fill: var(--land);
   stroke: var(--land-stroke);
