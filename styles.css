@@ -348,8 +348,8 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
-.equator-halo { stroke: #fff; stroke-opacity: .5; stroke-width: 3.6; }
-.equator-line { stroke: #c95f69; stroke-opacity: .7; stroke-width: 2; }
+.equator-halo { stroke: #fff; stroke-opacity: .5; stroke-width: 1.8; }
+.equator-line { stroke: #c95f69; stroke-opacity: .7; stroke-width: 1; }
 
 .land {
   fill: var(--land);
