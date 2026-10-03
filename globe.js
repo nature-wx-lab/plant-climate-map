@@ -246,7 +246,7 @@
       };
       const nodes = [svg("graticule", this.graticule), svg("country-border", this.countries)];
       if (o.regions) nodes.push(PlantGeography.regionPaths(o.regions, vectorPath));
-      nodes.push(svg("equator-halo", this.equator), svg("equator-line", this.equator));
+      if (o.equatorVisible) nodes.push(svg("equator-halo", this.equator), svg("equator-line", this.equator));
       if (o.outline) {
         const geometry = { type: "MultiLineString", coordinates: o.outline };
         nodes.push(svg("plant-origin-halo", geometry), svg("plant-origin-outline", geometry));

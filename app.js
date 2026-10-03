@@ -74,6 +74,8 @@
     geographyStatus: document.getElementById("geographyStatus"),
     geographyControls: document.getElementById("geographyControls"),
     geographyPanelToggle: document.getElementById("toggleGeographyPanel"),
+    equator: document.getElementById("equatorLayer"),
+    equatorToggle: document.getElementById("toggleEquator"),
     projectionBadge: document.getElementById("projectionBadge"),
     projectionButtons: document.querySelectorAll("[data-projection]"),
     focusLocationA: document.getElementById("focusLocationA"),
@@ -189,6 +191,7 @@
     globeLongitude: INITIAL_MAP_VIEW.longitude,
     globeLatitude: INITIAL_MAP_VIEW.latitude,
     globeUsed: false,
+    equatorVisible: true,
     pointers: new Map(),
     pinch: null,
     japanBox: { x: 0, y: 0, width: 1000, height: 1000 },
@@ -249,6 +252,7 @@
       zoom: state.zoom, longitude: state.globeLongitude, latitude: state.globeLatitude,
       countries: state.countries, outline, weatherVisible: state.weatherVisible,
       regions: state.geographyVisible.regions ? state.geography?.regions : null,
+      equatorVisible: state.equatorVisible,
       climateVisible: state.climateVisible, opacity: Number(elements.weatherLayerOpacity.value) / 100,
       japanBox: state.japanBox });
   }
@@ -2849,6 +2853,13 @@
     elements.geographyPanelToggle.setAttribute("aria-expanded", String(open));
     if (!open) elements.geographyControls.querySelector(".geography-help").open = false;
   }
+  elements.equatorToggle.addEventListener("click", () => {
+    state.equatorVisible = !state.equatorVisible;
+    elements.equator.toggleAttribute("hidden", !state.equatorVisible);
+    elements.equatorToggle.setAttribute("aria-pressed", String(state.equatorVisible));
+    elements.equatorToggle.querySelector("span").textContent = state.equatorVisible ? "ON" : "OFF";
+    syncGlobe();
+  });
   elements.geographyPanelToggle.addEventListener("click", () => {
     setGeographyPanel(!elements.geographyControls.classList.contains("is-open"));
   });

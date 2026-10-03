@@ -18,12 +18,12 @@
   <meta name="twitter:card" content="summary">
   <title>植物気候マップ｜Nature Wx Lab</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2318675b'/%3E%3Cpath d='M32 51V28M32 35C19 34 14 25 14 14c12 0 20 6 18 21zm0-2c13-1 18-10 18-21-12 0-20 6-18 21z' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css?v=20261003-equator">
+  <link rel="stylesheet" href="./styles.css?v=20261003-equator-toggle">
   <script src="./vendor/d3-array-3.2.4.min.js" defer></script>
   <script src="./vendor/d3-geo-3.1.1.min.js" defer></script>
   <script src="./geography.js?v=20261003-geography" defer></script>
-  <script src="./globe.js?v=20261003-equator" defer></script>
-  <script src="./app.js?v=20261003-toolbar-2" defer></script>
+  <script src="./globe.js?v=20261003-equator-toggle" defer></script>
+  <script src="./app.js?v=20261003-equator-toggle" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -157,10 +157,11 @@
         <div id="geographyControls" class="geography-controls">
           <button id="toggleGeographyPanel" class="geography-panel-toggle" type="button" aria-controls="geographyToolbar" aria-expanded="false">地名 <span aria-hidden="true">⌄</span></button>
           <div id="geographyToolbar" class="geography-toolbar">
-            <div class="geography-buttons" role="group" aria-label="地名と広域区分の表示">
+            <div class="geography-buttons" role="group" aria-label="地名・広域区分・赤道の表示">
               <button type="button" data-geography="countries" aria-pressed="false" disabled>国名 <span>OFF</span></button>
               <button type="button" data-geography="capitals" aria-pressed="false" disabled>首都 <span>OFF</span></button>
               <button type="button" data-geography="regions" aria-pressed="false" disabled>広域区分 <span>OFF</span></button>
+              <button id="toggleEquator" type="button" aria-pressed="true">赤道 <span>ON</span></button>
             </div>
             <details class="geography-help"><summary aria-label="地名と広域区分の説明">？</summary>
               <div><p>広域区分は、地域名と同じ色の輪郭・薄い色で陸地の範囲を示します。国境をまたぐ区分の内側には国境も残します。</p>
