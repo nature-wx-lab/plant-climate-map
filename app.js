@@ -68,6 +68,10 @@
     globeBase: document.getElementById("globeBase"),
     globeRaster: document.getElementById("globeRaster"),
     globeVectors: document.getElementById("globeVectors"),
+    region: document.getElementById("regionLayer"),
+    geographyLabels: document.getElementById("geographyLabels"),
+    geographyButtons: document.querySelectorAll("[data-geography]"),
+    geographyStatus: document.getElementById("geographyStatus"),
     projectionBadge: document.getElementById("projectionBadge"),
     projectionButtons: document.querySelectorAll("[data-projection]"),
     focusLocationA: document.getElementById("focusLocationA"),
@@ -196,6 +200,8 @@
     countries: [],
     places: [],
     geographyStatus: "loading",
+    geography: null,
+    geographyVisible: { countries: false, capitals: false, regions: false },
     plantVisible: false,
     plantOriginBounds: null,
     plants: [],
@@ -240,6 +246,7 @@
     globe.update({ visible: state.projection === "globe", width: bounds.width, height: bounds.height,
       zoom: state.zoom, longitude: state.globeLongitude, latitude: state.globeLatitude,
       countries: state.countries, outline, weatherVisible: state.weatherVisible,
+      regions: state.geographyVisible.regions ? state.geography?.regions : null,
       climateVisible: state.climateVisible, opacity: Number(elements.weatherLayerOpacity.value) / 100,
       japanBox: state.japanBox });
   }
@@ -322,12 +329,54 @@
     elements.zoomOut.disabled = state.zoom <= 1;
     elements.zoomIn.disabled = state.zoom >= 2048;
     drawSelections();
+    drawGeographyLabels();
     if (state.projection === "globe" && state.zoom >= 32) {
       clearTimeout(state.japanViewTimer);
       // Invalidate an older asynchronous viewport before the next tile render.
       state.japanMapSerial++;
       state.japanViewTimer = setTimeout(updateJapanMap, 120);
     } else updateJapanMap();
+  }
+
+  function drawGeographyLabels() {
+    if (!state.geography) return;
+    const bounds = elements.map.getBoundingClientRect();
+    const size = MAP_SIZE / state.zoom, scale = Math.min(bounds.width, bounds.height) / size;
+    const left = state.centerX - size / 2, top = state.centerY - size / 2;
+    const dx = (bounds.width - size * scale) / 2, dy = (bounds.height - size * scale) / 2;
+    const point = state.projection === "globe" ? (lon, lat) => {
+      const p = globe.point(lon, lat); return p ? [p] : [];
+    } : (lon, lat) => {
+      const [x, y] = project(lon, lat);
+      return [-MAP_SIZE, 0, MAP_SIZE].map((shift) => [(x + shift - left) * scale + dx, (y - top) * scale + dy]);
+    };
+    elements.geographyLabels.setAttribute("transform", state.projection === "globe" ? ""
+      : `translate(${left - dx / scale} ${top - dy / scale}) scale(${1 / scale})`);
+    const center = state.projection === "globe" ? [state.globeLongitude, state.globeLatitude] : unproject(state.centerX, state.centerY);
+    const centerCountry = state.geographyVisible.regions && state.zoom >= 4 ? countryAt(...center) : null;
+    const centerRegion = centerCountry ? state.geography.countries.find((c) => c.code === centerCountry.properties.code)?.region : null;
+    PlantGeography.drawLabels(elements.geographyLabels, state.geography,
+      { width: bounds.width, height: bounds.height, point, visible: state.geographyVisible, zoom: state.zoom,
+        centerRegion,
+        disk: state.projection === "globe" ? { x: bounds.width / 2, y: bounds.height / 2,
+          radius: Math.min(bounds.width, bounds.height) * .46 * state.zoom } : null });
+  }
+
+  async function loadGeographyLabels() {
+    try {
+      const response = await fetch("./data/geography.json", { credentials: "same-origin", referrerPolicy: "no-referrer" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const metadata = await response.json();
+      if (metadata.schema !== 1 || !metadata.countries || !Array.isArray(metadata.regions)) throw new Error("地名データ形式が不正です");
+      state.geography = PlantGeography.prepare(state.countries, state.places, metadata);
+      const projection = d3.geoMercator().translate([500, 500]).scale(MAP_SIZE / (2 * Math.PI))
+        .clipExtent([[0, 0], [MAP_SIZE, MAP_SIZE]]);
+      elements.region.replaceChildren(PlantGeography.regionPaths(state.geography.regions, d3.geoPath(projection)));
+      elements.geographyButtons.forEach((button) => { button.disabled = false; });
+      drawGeographyLabels(); syncGlobe();
+    } catch (error) {
+      elements.geographyStatus.textContent = "地名を読み込めませんでした。再読込してください。";
+    }
   }
 
   function openResultPanel() {
@@ -1061,6 +1110,7 @@
       }
       elements.land.replaceChildren(fragment);
       elements.border.replaceChildren(borderFragment);
+      loadGeographyLabels();
       syncGlobe();
       if (state.referenceRecord?.cell) {
         state.referenceRecord.location = describeLocation(state.referenceRecord.cell);
@@ -1068,6 +1118,7 @@
       if (state.selectedCell) updateLocation(state.selectedCell);
     } catch (error) {
       state.geographyStatus = "error";
+      elements.geographyStatus.textContent = "地図・地名を読み込めませんでした。再読込してください。";
       if (state.referenceRecord?.cell) state.referenceRecord.location = describeLocation(state.referenceRecord.cell);
       if (state.selectedCell) updateLocation(state.selectedCell);
     }
@@ -2783,7 +2834,17 @@
   elements.projectionButtons.forEach((button) => button.addEventListener("click", () => setProjection(button.dataset.projection)));
   elements.focusLocationA.addEventListener("click", () => focusLocation(state.referenceRecord || state.currentRecord));
   elements.focusLocationB.addEventListener("click", () => focusLocation(state.referenceRecord && state.currentRecord));
-  const mapResize = new ResizeObserver(() => { if (state.projection === "globe") setView(state.zoom); });
+  elements.geographyButtons.forEach((button) => button.addEventListener("click", () => {
+    const key = button.dataset.geography;
+    state.geographyVisible[key] = !state.geographyVisible[key];
+    button.setAttribute("aria-pressed", String(state.geographyVisible[key]));
+    button.querySelector("span").textContent = state.geographyVisible[key] ? "ON" : "OFF";
+    elements.region.toggleAttribute("hidden", !state.geographyVisible.regions);
+    drawGeographyLabels(); syncGlobe();
+  }));
+  const mapResize = new ResizeObserver(() => {
+    if (state.projection === "globe") setView(state.zoom); else drawGeographyLabels();
+  });
   mapResize.observe(elements.map);
   elements.climateToggle.addEventListener("click", toggleClimateLayer);
   elements.setReference.addEventListener("click", setReferenceFromCurrent);

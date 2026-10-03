@@ -20,6 +20,8 @@ DEPLOY_FILES = (
     "404.html",
     "app.js",
     "globe.js",
+    "geography.js",
+    "data/geography.json",
     "vendor/d3-array-3.2.4.min.js",
     "vendor/d3-geo-3.1.1.min.js",
     "vendor/d3-array-LICENSE.txt",

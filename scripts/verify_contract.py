@@ -35,6 +35,8 @@ SOURCE_FILES = {
     "THIRD_PARTY_NOTICES.md",
     "app.js",
     "globe.js",
+    "geography.js",
+    "data/geography.json",
     "vendor/d3-array-3.2.4.min.js",
     "vendor/d3-geo-3.1.1.min.js",
     "vendor/d3-array-LICENSE.txt",
@@ -49,6 +51,7 @@ SOURCE_FILES = {
     "scripts/build_deployment_manifest.py",
     "scripts/build_climate_layers.py",
     "scripts/build_plant_outlines.py",
+    "scripts/build_geography.py",
     "scripts/build_japan_1km.py",
     "scripts/build_japan_humidity.py",
     "scripts/climate_layers_requirements.txt",
@@ -63,6 +66,8 @@ DEPLOY_FILES = {
     "404.html",
     "app.js",
     "globe.js",
+    "geography.js",
+    "data/geography.json",
     "vendor/d3-array-3.2.4.min.js",
     "vendor/d3-geo-3.1.1.min.js",
     "vendor/d3-array-LICENSE.txt",
@@ -166,6 +171,54 @@ api.moveDrag(event(1,160,310));api.endDrag(event(1,160,310));assert.equal(taps,0
 state.projection="flat";state.zoom=1;api.beginDrag(event(3,150,300));api.beginDrag(event(4,250,300));
 api.moveDrag(event(4,350,300));assert.equal(state.zoom,2);close(state.centerX,437.5);
 console.log("GLOBE_COORDINATES_CLIPPING_FALLBACK_GESTURES_OK");
+'''
+    subprocess.run(["node", "-e", program, str(ROOT)], check=True)
+
+
+def verify_geography() -> None:
+    """Exercise shared-edge removal and label clipping against the actual renderer."""
+    program = r'''
+const assert = require("node:assert/strict"), fs = require("node:fs"), vm = require("node:vm");
+const root = process.argv[1];
+const makeNode = (name) => ({name, attrs:{}, children:[], setAttribute(k,v){this.attrs[k]=v;},
+  append(...items){for(const item of items) this.children.push(...(item.name==="fragment"?item.children:[item]));},
+  replaceChildren(...items){this.children=[];this.append(...items);},
+  getContext(){return {measureText:(text)=>({width:text.length*11})};}});
+const sandbox = {window:{}, console, Math, Map, Set, document:{
+  createElementNS:(ns,name)=>makeNode(name), createDocumentFragment:()=>makeNode("fragment"), createElement:makeNode}};
+vm.createContext(sandbox);
+for(const file of ["vendor/d3-array-3.2.4.min.js","vendor/d3-geo-3.1.1.min.js","geography.js"])
+  vm.runInContext(fs.readFileSync(root+"/"+file,"utf8"),sandbox);
+const api=sandbox.window.PlantGeography;
+const polygon=(coordinates)=>({geometry:{type:"Polygon",coordinates:[coordinates]}});
+const joined=api.outsideBoundary([polygon([[0,0],[1,0],[1,1],[0,1],[0,0]]),polygon([[1,0],[2,0],[2,1],[1,1],[1,0]])]);
+const edges=joined.coordinates.flatMap(r=>r.slice(1).map((p,i)=>[r[i],p]));
+assert.equal(edges.length,6);
+assert.ok(!edges.some(([a,b])=>a[0]===1&&b[0]===1),"interior country edge must be removed");
+const islands=api.outsideBoundary([polygon([[0,0],[1,0],[1,1],[0,1],[0,0]]),polygon([[4,0],[5,0],[5,1],[4,1],[4,0]])]);
+assert.equal(islands.coordinates.length,2,"disconnected islands must keep separate outlines");
+const world=JSON.parse(fs.readFileSync(root+"/data/world-50m.geojson"));
+const metadata=JSON.parse(fs.readFileSync(root+"/data/geography.json"));
+assert.deepEqual(Object.keys(metadata.countries).sort(),world.features.map(f=>f.properties.code).sort());
+assert.ok(metadata.regions.every(r=>/^#[0-9a-f]{6}$/.test(r.color)&&r.point.every(Number.isFinite)));
+const data=api.prepare(world.features,world.places,metadata);
+assert.equal(data.countries.length,242);assert.equal(data.capitals.length,200);
+assert.deepEqual(data.regions.find(r=>r.id==="south-africa").members.map(m=>m.code).sort().join(","),"BWA,LSO,NAM,SWZ,ZAF");
+assert.equal(data.capitals.filter(c=>c.code==="ZAF").length,3);
+assert.ok(data.capitals.some(c=>c.code==="JPN"&&c.name==="東京"));
+const layer=makeNode("g"), point=()=>[[100,100]], sample={regions:[],countries:[{name:"日本",point:[139,36]}],capitals:[]};
+api.drawLabels(layer,sample,{width:200,height:200,zoom:1,point,visible:{countries:true}});
+assert.equal(layer.children.filter(n=>n.attrs.class==="geography-label country-label").length,1);
+api.drawLabels(layer,sample,{width:200,height:200,zoom:1,point,visible:{countries:false}});
+assert.equal(layer.children.length,1);assert.equal(layer.children[0].children.length,0);
+api.drawLabels(layer,sample,{width:200,height:200,zoom:1,point:()=>[[188,100]],disk:{x:100,y:100,radius:90},visible:{countries:true}});
+assert.equal(layer.children.length,1,"text must fit inside the globe limb, not just its anchor");
+api.drawLabels(layer,sample,{width:200,height:200,zoom:1,point:()=>[],visible:{countries:true}});
+assert.equal(layer.children.length,1,"far hemisphere labels must be absent");
+api.drawLabels(layer,{countries:[],capitals:[],regions:[{id:"east-asia",name:"東アジア",color:"#2b619d",point:[112,39],members:[]}]},
+  {width:200,height:200,zoom:32,point:()=>[],centerRegion:"east-asia",visible:{regions:true}});
+assert.equal(layer.children.length,2,"keep the central region labelled when zoomed past its label anchor");
+console.log("GEOGRAPHY_BOUNDARIES_CAPITALS_LABEL_CLIPPING_OK");
 '''
     subprocess.run(["node", "-e", program, str(ROOT)], check=True)
 
@@ -365,8 +418,8 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20260928-globe-2\" defer></script>" in index, "versioned local deferred script missing")
-    require('href="./styles.css?v=20260928-globe-2"' in index, "versioned local stylesheet missing")
+    require("<script src=\"./app.js?v=20261003-geography\" defer></script>" in index, "versioned local deferred script missing")
+    require('href="./styles.css?v=20261003-geography"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
     require("耐寒性・栽培可否の判定ではありません" in index, "reference rating disclaimer missing")
@@ -622,6 +675,7 @@ def main() -> None:
     subprocess.run(["node", "--check", str(ROOT / "app.js")], check=True)
     verify_comparison_math()
     verify_globe_math()
+    verify_geography()
     subprocess.run(["node", "--check", str(ROOT / "globe.js")], check=True)
     print(json.dumps({
         "status": "ok",

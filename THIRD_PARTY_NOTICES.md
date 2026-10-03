@@ -30,6 +30,10 @@ The world boundary layer and country names are derived from Natural Earth 1:50m 
 - Capital source: <https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-populated-places/>
 - Terms: <https://www.naturalearthdata.com/about/terms-of-use/>
 
+Country label anchors and regional membership in `data/geography.json` are extracted from Natural Earth 1:50m Admin 0 Countries v5.1.1, using `LABEL_X`, `LABEL_Y`, `LABELRANK` and `SUBREGION`. European and Oceanian subdivisions are combined; Russia remains entirely in the Europe group, explicitly labelled Europe and Russia. Regions keep whole countries, including their offshore territories as represented by the source. Regional outlines remove shared country edges from the existing boundary layer, retaining separate islands. They are navigation guides, not botanical ranges or climate classifications. Capital markers use the existing populated-place records flagged as admin-0 capitals, including multiple capitals and administrative seats. Dense labels are omitted to avoid overlap.
+
+- Rebuild metadata: `python3 scripts/build_geography.py --countries-zip ne_50m_admin_0_countries.zip` (pinned source checksum verified by the script).
+
 Country boundaries are shown only as geographic context and do not express a legal position.
 
 ## Plant catalog and native-region guide
