@@ -267,6 +267,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .region-label rect { fill: #fffffff0; stroke-width: 1.4; }
 .region-label text { font-weight: 700; stroke-width: 0; }
 .capital-marker { fill: #235263; stroke: #fff; stroke-width: 1.5; }
+.label-leader { stroke-width: .8; stroke-opacity: .65; }
 .weather-layer-buttons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; padding: 3px; border-radius: 7px; background: #eaf0ed; }
 .weather-layer-buttons button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 5px 14px; border: 1px solid transparent; border-radius: 5px; color: #60736a; background: transparent; font-size: 0.76rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .weather-layer-buttons button b { font-size: 0.82rem; font-weight: 500; color: #728279; }

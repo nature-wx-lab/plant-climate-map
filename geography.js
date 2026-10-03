@@ -82,49 +82,127 @@
   function drawLabels(layer, data, options) {
     const { width, height, point, visible, disk } = options;
     const fragment = document.createDocumentFragment(), occupied = [];
+    const identity = (kind, code, name) => `${kind}:${code || ""}:${name}`;
+    const previous = new Set(Array.from(layer.children).filter((item) => item.getAttribute("data-name"))
+      .map((item) => identity(item.getAttribute("data-kind"), item.getAttribute("data-code"), item.getAttribute("data-name"))));
     const markers = node("g", { class: "capital-markers" });
     fragment.append(markers);
-    const inside = (p, margin = 6) => p && p[0] >= margin && p[1] >= margin && p[0] <= width - margin && p[1] <= height - margin
+    const inside = (p, margin = 0) => p && p.every(Number.isFinite) && p[0] >= margin && p[1] >= margin && p[0] <= width - margin && p[1] <= height - margin
       && (!disk || Math.hypot(p[0] - disk.x, p[1] - disk.y) <= disk.radius - margin);
     const intersects = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
     const measure = document.createElement("canvas").getContext("2d");
-    const text = (name, p, kind, color, offset = [0, 0]) => {
-      const size = kind === "region" ? 13 : kind === "country" ? 12 : 11;
-      measure.font = `${kind === "capital" ? 500 : 700} ${size}px sans-serif`;
-      const w = measure.measureText(name).width + (kind === "region" ? 16 : 6), h = size + 9;
-      const x = p[0] + offset[0], y = p[1] + offset[1];
-      const box = [x - w / 2, y - h / 2, x + w / 2, y + h / 2];
-      if (![[box[0], box[1]], [box[2], box[1]], [box[0], box[3]], [box[2], box[3]]].every((p) => inside(p, 3))
-        || occupied.some((b) => intersects(box, b))) return false;
-      occupied.push(box);
-      const group = node("g", { class: `geography-label ${kind}-label`, "data-name": name });
-      if (kind === "region") group.append(node("rect", { x: box[0], y: box[1], width: w, height: h, rx: 4, stroke: color }));
-      const label = node("text", { x, y, "text-anchor": "middle", "dominant-baseline": "central", "font-size": size });
-      if (color) label.setAttribute("fill", color);
-      label.textContent = name; group.append(label); fragment.append(group);
-      return true;
+
+    // A fixed name anchor can leave the viewport while much of its country is still visible.
+    // Find an anchor on the clipped land instead, including at the globe's visible limb.
+    const projections = (options.projections || []).map((projection) => ({ projection, path: d3.geoPath(projection) }));
+    const landAnchor = (country, projection, path) => {
+      const bounds = path.bounds(country.feature);
+      if (!bounds.flat().every(Number.isFinite)) return null;
+      const centroid = path.centroid(country.feature);
+      const contains = (p) => {
+        if (!inside(p)) return false;
+        const coordinate = projection.invert(p);
+        return coordinate?.every(Number.isFinite) && d3.geoContains(country.feature, coordinate);
+      };
+      if (contains(centroid)) return centroid;
+      const candidates = [[width / 2, height / 2]];
+      for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) candidates.push([
+        bounds[0][0] + (bounds[1][0] - bounds[0][0]) * (x + .5) / 5,
+        bounds[0][1] + (bounds[1][1] - bounds[0][1]) * (y + .5) / 5,
+      ]);
+      const found = candidates.find(contains);
+      if (found) return found;
+      // Small islands and thin visible strips can fall between the sample points.
+      const edgePoints = [], record = (x, y) => { if (inside([x, y])) edgePoints.push([x, y]); };
+      path.context({ moveTo: record, lineTo: record, closePath() {}, arc() {} })(country.feature);
+      path.context(null);
+      edgePoints.sort((a, b) => Math.hypot(a[0] - width / 2, a[1] - height / 2)
+        - Math.hypot(b[0] - width / 2, b[1] - height / 2));
+      return edgePoints[0] || null;
     };
-    if (visible.regions) for (const region of data.regions) {
-      if (region.id === "ocean-islands" && options.zoom < 4) continue;
-      let candidates = point(...region.point).filter((p) => inside(p, 20));
-      const reference = candidates[0] || [width / 2, height / 2];
-      candidates = candidates.concat(region.members.flatMap((m) => point(...m.point)).filter((p) => inside(p, 20))
-        .sort((a, b) => Math.hypot(a[0] - reference[0], a[1] - reference[1]) - Math.hypot(b[0] - reference[0], b[1] - reference[1])));
-      if (options.centerRegion === region.id) candidates.push([width / 2, height / 2]);
-      for (const p of candidates) if (text(region.name, p, "region", region.color)) break;
+    const countryPoints = new Map();
+    if (visible.countries || visible.regions) for (const country of data.countries) {
+      const primary = point(...country.point).filter((p) => inside(p));
+      let anchors = primary;
+      if (country.feature && projections.length) anchors = projections.map(({ projection, path }) => {
+        const projected = projection(country.point);
+        return primary.find((p) => Math.hypot(p[0] - projected[0], p[1] - projected[1]) < .1)
+          || landAnchor(country, projection, path);
+      }).filter(Boolean);
+      if (!anchors.length && country.code && country.code === options.centerCountry) anchors = [[width / 2, height / 2]];
+      countryPoints.set(country, anchors);
     }
-    if (visible.countries) for (const country of data.countries) for (const p of point(...country.point)) {
-      if (inside(p)) text(country.name, p, "country");
+    const entries = [];
+    if (visible.countries) for (const country of data.countries) for (const p of countryPoints.get(country) || []) {
+      entries.push({ name: country.name, kind: "country", code: country.code, rank: country.rank || 0, anchors: [p] });
+    }
+    if (visible.regions) for (const region of data.regions) {
+      const anchors = point(...region.point).filter((p) => inside(p));
+      const reference = anchors[0] || [width / 2, height / 2];
+      anchors.push(...region.members.flatMap((member) => countryPoints.get(member) || [])
+        .sort((a, b) => Math.hypot(a[0] - reference[0], a[1] - reference[1]) - Math.hypot(b[0] - reference[0], b[1] - reference[1])));
+      if (options.centerRegion === region.id) anchors.unshift([width / 2, height / 2]);
+      if (anchors.length) entries.push({ name: region.name, kind: "region", code: region.id, color: region.color, anchors });
     }
     if (visible.capitals) for (const capital of data.capitals) for (const p of point(...capital.point)) {
       if (!inside(p)) continue;
       markers.append(node("circle", { cx: p[0], cy: p[1], r: 2.8, class: "capital-marker", "data-name": capital.name }));
-      measure.font = "500 11px sans-serif";
-      const w = measure.measureText(capital.name).width / 2 + 9;
-      for (const offset of [[w, 0], [-w, 0], [0, -13], [0, 13]]) {
-        if (text(capital.name, p, "capital", null, offset)) break;
-      }
+      occupied.push([p[0] - 5, p[1] - 5, p[0] + 5, p[1] + 5]);
+      entries.push({ name: capital.name, kind: "capital", code: capital.code, rank: capital.rank || 0, anchors: [p] });
     }
+    // Keep the country and region under the camera first; all three categories share the
+    // same placement search, so a region label cannot replace a country or capital name.
+    const central = (entry) => Boolean(entry.code && (entry.code === options.centerCountry || entry.code === options.centerRegion));
+    const known = (entry) => previous.has(identity(entry.kind, entry.code, entry.name));
+    entries.sort((a, b) => Number(central(b)) - Number(central(a))
+      || Number(b.kind === "region") - Number(a.kind === "region") || Number(known(b)) - Number(known(a)) || (a.rank || 0) - (b.rank || 0));
+    let placed = 0;
+    const text = ({ name, kind, color, code, anchors }) => {
+      const size = kind === "region" ? 13 : kind === "country" ? 12 : 11;
+      measure.font = `${kind === "capital" ? 500 : 700} ${size}px "Hiragino Sans", "Yu Gothic", sans-serif`;
+      const w = measure.measureText(name).width + (kind === "region" ? 16 : 6), h = size + 9;
+      if (w > width - 6 || h > height - 6) return false;
+      let box, anchor, x, y;
+      const fit = (p, dx, dy) => {
+        x = Math.max(w / 2 + 3, Math.min(width - w / 2 - 3, p[0] + dx));
+        y = Math.max(h / 2 + 3, Math.min(height - h / 2 - 3, p[1] + dy));
+        box = [x - w / 2, y - h / 2, x + w / 2, y + h / 2];
+        if (occupied.some((b) => intersects([box[0] - 2, box[1] - 2, box[2] + 2, box[3] + 2], b))) return false;
+        anchor = p;
+        return true;
+      };
+      const offsets = kind === "capital" ? [[w / 2 + 9, 0], [-w / 2 - 9, 0], [0, -h - 3], [0, h + 3]] : [[0, 0]];
+      for (let ring = 1; ring <= 2; ring++) {
+        const dx = ring * (w / 2 + 8), dy = ring * (h + 5);
+        offsets.push([0, -dy], [0, dy], [-dx, 0], [dx, 0], [-dx, -dy], [dx, -dy], [-dx, dy], [dx, dy]);
+      }
+      let found = anchors.some((p) => offsets.some(([dx, dy]) => fit(p, dx, dy)));
+      if (!found && (options.zoom >= 4 || previous.has(identity(kind, code, name)))) {
+        // Crowded areas can use a callout elsewhere in the viewport, joined to the real anchor.
+        const p = anchors[0], candidates = [];
+        for (let cy = h / 2 + 3; cy <= height - h / 2 - 3; cy += h + 5)
+          for (let cx = w / 2 + 3; cx <= width - w / 2 - 3; cx += Math.max(16, w / 2)) candidates.push([cx, cy]);
+        candidates.sort((a, b) => Math.hypot(a[0] - p[0], a[1] - p[1]) - Math.hypot(b[0] - p[0], b[1] - p[1]));
+        found = candidates.some(([cx, cy]) => fit(p, cx - p[0], cy - p[1]));
+      }
+      if (!found) return false;
+      occupied.push(box);
+      const group = node("g", { class: `geography-label ${kind}-label`, "data-name": name, "data-code": code || "",
+        "data-kind": kind, "data-box": box.join(",") });
+      const end = [Math.max(box[0], Math.min(box[2], anchor[0])), Math.max(box[1], Math.min(box[3], anchor[1]))];
+      if (Math.hypot(end[0] - anchor[0], end[1] - anchor[1]) > 3) group.append(node("line", {
+        x1: anchor[0], y1: anchor[1], x2: end[0], y2: end[1], class: "label-leader", stroke: color || (kind === "capital" ? "#235263" : "#536e60"),
+      }));
+      if (kind === "region") group.append(node("rect", { x: box[0], y: box[1], width: w, height: h, rx: 4, stroke: color }));
+      const label = node("text", { x, y, "text-anchor": "middle", "dominant-baseline": "central", "font-size": size });
+      if (color) label.setAttribute("fill", color);
+      label.textContent = name; group.append(label); fragment.append(group);
+      placed++;
+      return true;
+    };
+    entries.forEach(text);
+    layer.setAttribute("data-visible-labels", entries.length);
+    layer.setAttribute("data-placed-labels", placed);
     layer.replaceChildren(fragment);
   }
 

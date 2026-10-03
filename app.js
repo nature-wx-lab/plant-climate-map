@@ -359,11 +359,14 @@
     elements.geographyLabels.setAttribute("transform", state.projection === "globe" ? ""
       : `translate(${left - dx / scale} ${top - dy / scale}) scale(${1 / scale})`);
     const center = state.projection === "globe" ? [state.globeLongitude, state.globeLatitude] : unproject(state.centerX, state.centerY);
-    const centerCountry = state.geographyVisible.regions && state.zoom >= 4 ? countryAt(...center) : null;
+    const centerCountry = (state.geographyVisible.countries || state.geographyVisible.regions) ? countryAt(...center) : null;
     const centerRegion = centerCountry ? state.geography.countries.find((c) => c.code === centerCountry.properties.code)?.region : null;
+    const projections = state.projection === "globe" ? [globe.projection()] : [-MAP_SIZE, 0, MAP_SIZE].map((shift) =>
+      d3.geoMercator().translate([dx + (MAP_SIZE / 2 + shift - left) * scale, dy + (MAP_SIZE / 2 - top) * scale])
+        .scale(MAP_SIZE * scale / (2 * Math.PI)).clipExtent([[0, 0], [bounds.width, bounds.height]]));
     PlantGeography.drawLabels(elements.geographyLabels, state.geography,
       { width: bounds.width, height: bounds.height, point, visible: state.geographyVisible, zoom: state.zoom,
-        centerRegion,
+        centerRegion, centerCountry: centerCountry?.properties.code, projections,
         disk: state.projection === "globe" ? { x: bounds.width / 2, y: bounds.height / 2,
           radius: Math.min(bounds.width, bounds.height) * .46 * state.zoom } : null });
   }
