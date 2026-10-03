@@ -18,12 +18,12 @@
   <meta name="twitter:card" content="summary">
   <title>植物気候マップ｜Nature Wx Lab</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2318675b'/%3E%3Cpath d='M32 51V28M32 35C19 34 14 25 14 14c12 0 20 6 18 21zm0-2c13-1 18-10 18-21-12 0-20 6-18 21z' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css?v=20261003-geography">
+  <link rel="stylesheet" href="./styles.css?v=20261003-toolbar-2">
   <script src="./vendor/d3-array-3.2.4.min.js" defer></script>
   <script src="./vendor/d3-geo-3.1.1.min.js" defer></script>
   <script src="./geography.js?v=20261003-geography" defer></script>
   <script src="./globe.js?v=20261003-geography" defer></script>
-  <script src="./app.js?v=20261003-geography" defer></script>
+  <script src="./app.js?v=20261003-toolbar-2" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -154,6 +154,22 @@
           <button type="button" data-projection="flat" aria-pressed="true">平面</button>
           <button type="button" data-projection="globe" aria-pressed="false">地球儀</button>
         </div>
+        <div id="geographyControls" class="geography-controls">
+          <button id="toggleGeographyPanel" class="geography-panel-toggle" type="button" aria-controls="geographyToolbar" aria-expanded="false">地名 <span aria-hidden="true">⌄</span></button>
+          <div id="geographyToolbar" class="geography-toolbar">
+            <div class="geography-buttons" role="group" aria-label="地名と広域区分の表示">
+              <button type="button" data-geography="countries" aria-pressed="false" disabled>国名 <span>OFF</span></button>
+              <button type="button" data-geography="capitals" aria-pressed="false" disabled>首都 <span>OFF</span></button>
+              <button type="button" data-geography="regions" aria-pressed="false" disabled>広域区分 <span>OFF</span></button>
+            </div>
+            <details class="geography-help"><summary aria-label="地名と広域区分の説明">？</summary>
+              <div><p>広域区分は、地域名と同じ色の輪郭・薄い色で陸地の範囲を示します。国境をまたぐ区分の内側には国境も残します。</p>
+              <p>Natural Earthの国・地域単位の区分をもとに、ヨーロッパとオセアニアの小区分をまとめています。ロシア全体は「ヨーロッパ・ロシア」に含みます。植物の原産範囲や気候区分とは別の地理的な目安です。</p>
+              <p>●は首都・行政中心の収録地点。複数の首都を持つ国は複数表示します。文字が重なる場所は省略し、拡大すると詳しく表示します。</p></div>
+            </details>
+            <span id="geographyStatus" class="geography-status" role="status"></span>
+          </div>
+        </div>
         <details id="mapSettings" class="map-settings"><summary>表示設定</summary><div id="layerPanelBody" class="layer-panel-body">
         <section class="active-layer-card">
           <span id="activeLayerPeriod">年平均</span>
@@ -172,20 +188,6 @@
 
         <p class="layer-panel-note">日本は約1kmの独自推定、日本以外はNASA POWER。日本の白抜きは欠測です。</p>
         </div></details>
-      </div>
-      <div class="geography-toolbar">
-        <span class="geography-heading">地名表示</span>
-        <div class="geography-buttons" role="group" aria-label="地名と広域区分の表示">
-          <button type="button" data-geography="countries" aria-pressed="false" disabled>国名 <span>OFF</span></button>
-          <button type="button" data-geography="capitals" aria-pressed="false" disabled>首都 <span>OFF</span></button>
-          <button type="button" data-geography="regions" aria-pressed="false" disabled>広域区分 <span>OFF</span></button>
-        </div>
-        <details class="geography-help"><summary aria-label="地名と広域区分の説明">？</summary>
-          <div><p>広域区分は、地域名と同じ色の輪郭・薄い色で陸地の範囲を示します。国境をまたぐ区分の内側には国境も残します。</p>
-          <p>Natural Earthの国・地域単位の区分をもとに、ヨーロッパとオセアニアの小区分をまとめています。ロシア全体は「ヨーロッパ・ロシア」に含みます。植物の原産範囲や気候区分とは別の地理的な目安です。</p>
-          <p>●は首都・行政中心の収録地点。複数の首都を持つ国は複数表示します。文字が重なる場所は省略し、拡大すると詳しく表示します。</p></div>
-        </details>
-        <span id="geographyStatus" class="geography-status" role="status"></span>
       </div>
       <div class="map-wrap">
         <canvas id="globeBase" class="globe-surface" aria-hidden="true" hidden></canvas>

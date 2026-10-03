@@ -240,20 +240,23 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .plant-rating-guide p { margin: 6px 0; }
 .plant-rating-guide ol { list-style: none; margin: 6px 0; padding: 0; }
 .plant-rating-guide li { margin: 4px 0; }
-.map-toolbar { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 7px 14px; background: #f9fbfa; border-bottom: 1px solid #cedcd6; position: relative; z-index: 9; }
-.geography-toolbar { position: relative; z-index: 8; min-height: 44px; padding: 4px 14px; display: flex; align-items: center; gap: 8px; background: #f9fbfa; border-bottom: 1px solid #cedcd6; }
-.geography-heading { color: #607267; font-size: .68rem; white-space: nowrap; }
-.geography-buttons { display: flex; gap: 6px; }
-.geography-buttons button { min-height: 34px; padding: 4px 10px; border: 1px solid #c7d6ce; border-radius: 5px; background: #fff; color: #536e60; font-size: .72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
-.geography-buttons button span { display: inline-block; width: 25px; font-size: .58rem; color: #718078; }
+.map-toolbar { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 6px 10px; background: #f9fbfa; border-bottom: 1px solid #cedcd6; position: relative; z-index: 9; }
+.geography-controls { flex: 0 0 auto; }
+.geography-panel-toggle { display: none; }
+.geography-toolbar { display: flex; align-items: center; gap: 8px; }
+.geography-help { position: relative; }
+.geography-buttons { display: flex; gap: 4px; }
+.geography-buttons button { min-height: 36px; padding: 4px 7px; border: 1px solid #c7d6ce; border-radius: 5px; background: #fff; color: #536e60; font-size: .72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.geography-buttons button span { display: inline-block; width: 21px; font-size: .58rem; color: #718078; }
 .geography-buttons button[aria-pressed="true"] { color: #184f41; border-color: #4f8b75; background: #e1f1e9; }
 .geography-buttons button[aria-pressed="true"] span { color: #184f41; }
 .geography-buttons button:disabled { opacity: .5; cursor: wait; }
 .geography-help > summary { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #c7d6ce; border-radius: 50%; color: #607267; font-size: .8rem; cursor: pointer; list-style: none; }
 .geography-help > summary::-webkit-details-marker { display: none; }
-.geography-help > div { position: absolute; top: calc(100% + 4px); left: 14px; width: min(380px, calc(100vw - 32px)); padding: 4px 12px; border: 1px solid #c7d6ce; border-radius: 6px; background: #fff; color: #4c655a; box-shadow: var(--shadow); font-size: .73rem; line-height: 1.6; }
+.geography-help > div { position: absolute; top: calc(100% + 6px); right: 0; width: min(380px, calc(100vw - 32px)); padding: 4px 12px; border: 1px solid #c7d6ce; border-radius: 6px; background: #fff; color: #4c655a; box-shadow: var(--shadow); font-size: .73rem; line-height: 1.6; }
 .geography-help p { margin: 8px 0; }
 .geography-status { color: #973d2b; font-size: .65rem; }
+.geography-status:not(:empty) { position: absolute; top: calc(100% + 6px); right: 10px; max-width: 280px; padding: 6px 8px; border: 1px solid #d7b6ac; border-radius: 5px; background: #fff; }
 #geographyLabels, #regionLayer { pointer-events: none; }
 .region-fill { fill-opacity: .065; stroke: none; }
 .region-border-halo { fill: none; stroke: #fff; stroke-opacity: .8; stroke-width: 3.4; vector-effect: non-scaling-stroke; }
@@ -314,7 +317,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .map-wrap {
   position: relative;
   width: 100%;
-  height: calc(100svh - 143px);
+  height: calc(100svh - 99px);
   min-height: 484px;
   overflow: hidden;
   background: var(--ocean);
@@ -1283,7 +1286,7 @@ footer p + p { margin-top: 5px; }
   .select-field select { width: 124px; font-size: 16px; }
   .map-settings > summary { min-height: 40px; }
   .layer-panel-body { width: min(280px, calc(100vw - 16px)); top: calc(100% + 6px); max-height: 60svh; }
-  .map-wrap { height: calc(100svh - 244px); min-height: 420px; overflow: hidden; }
+  .map-wrap { height: calc(100svh - 196px); min-height: 420px; overflow: hidden; }
   .map-controls { top: 8px; left: 8px; }
   .map-controls button { min-width: 40px; min-height: 40px; padding: 4px 8px; }
   .map-guide { top: 58px; font-size: 0.7rem; }
@@ -1399,7 +1402,7 @@ footer p + p { margin-top: 5px; }
   .layer-panel-heading { padding: 8px 12px; }
   .layer-panel-heading span { display: none; }
   .plant-results, .plant-picker:has(#selectedPlant:not([hidden])) .plant-results { max-height: 150px; }
-  .map-wrap { height: calc(100svh - 143px); min-height: 0; }
+  .map-wrap { height: calc(100svh - 99px); min-height: 0; }
   .map-toolbar { gap: 6px; padding-inline: 8px; }
   .weather-layer-buttons button { padding-inline: 8px; }
   .select-field select { width: 85px; }
@@ -1427,7 +1430,7 @@ footer p + p { margin-top: 5px; }
   .layer-panel { height: 48px; }
   .plant-picker { max-height: calc(100svh - 100px); }
   .map-toolbar { min-height: 100px; }
-  .map-wrap { height: calc(100svh - 244px); min-height: 250px; }
+  .map-wrap { height: calc(100svh - 196px); min-height: 250px; }
 }
 @media (min-width: 761px) and (max-width: 1100px) {
   .weather-layer-buttons button { padding-inline: 8px; }
@@ -1459,18 +1462,35 @@ footer p + p { margin-top: 5px; }
   .projection-buttons button { padding-left: 6px; padding-right: 6px; }
 }
 
+/* Keep the geographic controls in the projection row; narrow layouts use a popup. */
+@media (max-width: 1320px) {
+  .geography-panel-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 40px; padding: 5px 7px; border: 1px solid #c7d6ce; border-radius: 6px; background: #fff; color: #536e60; font-size: .72rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .geography-panel-toggle[aria-expanded="true"] { color: #184f41; background: #e1f1e9; border-color: #4f8b75; }
+  .geography-toolbar { display: none; position: absolute; top: calc(100% + 6px); right: 8px; z-index: 10; width: min(320px, calc(100vw - 16px)); padding: 8px; border: 1px solid #b8cec0; border-radius: 6px; background: #fff; box-shadow: var(--shadow); }
+  .geography-controls.is-open .geography-toolbar { display: flex; }
+  .geography-buttons button { min-height: 40px; }
+  .geography-help { position: static; }
+  .geography-help > div { right: 0; }
+}
 @media (max-width: 760px) {
-  .geography-toolbar { min-height: 48px; padding: 4px 8px; gap: 6px; }
-  .geography-heading { display: none; }
-  .geography-buttons { gap: 5px; }
-  .geography-buttons button { min-height: 40px; padding: 4px 8px; font-size: .7rem; }
+  .map-toolbar { gap: 4px; padding: 3px 8px; }
+  .weather-layer-buttons, .projection-buttons { padding: 2px; }
+  .select-field select { width: 96px; padding-inline: 6px; }
+  .map-settings > summary { padding-inline: 7px; gap: 4px; font-size: .7rem; }
+  .geography-panel-toggle { padding-inline: 6px; font-size: .7rem; }
   .geography-help > summary { width: 32px; height: 32px; }
-  .geography-help > div { left: 8px; }
-  .geography-status:not(:empty) { width: 100%; }
-  .geography-toolbar:has(.geography-status:not(:empty)) { flex-wrap: wrap; }
+}
+@media (min-width: 761px) and (max-width: 950px) {
+  .map-toolbar { gap: 4px; padding: 5px 8px; }
+  .weather-layer-buttons { padding: 2px; }
+  .weather-layer-buttons button { padding-inline: 3px; font-size: .68rem; }
+  .weather-layer-buttons button b { display: none; }
+  .select-field select { width: 76px; padding-inline: 6px; font-size: .7rem; }
+  .projection-buttons { padding: 2px; }
+  .projection-buttons button { min-width: 40px; padding-inline: 5px; font-size: .68rem; }
+  .geography-panel-toggle { padding-inline: 6px; font-size: .7rem; }
+  .map-settings > summary { padding-inline: 5px; gap: 4px; font-size: .68rem; }
 }
 @media (min-width: 761px) and (max-width: 950px) and (max-height: 600px) {
-  .geography-toolbar { min-height: 48px; }
-  .geography-buttons button { min-height: 40px; }
-  .map-wrap { height: calc(100svh - 147px); }
+  .weather-layer-buttons button, .projection-buttons button { min-height: 40px; }
 }

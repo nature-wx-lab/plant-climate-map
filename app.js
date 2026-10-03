@@ -72,6 +72,8 @@
     geographyLabels: document.getElementById("geographyLabels"),
     geographyButtons: document.querySelectorAll("[data-geography]"),
     geographyStatus: document.getElementById("geographyStatus"),
+    geographyControls: document.getElementById("geographyControls"),
+    geographyPanelToggle: document.getElementById("toggleGeographyPanel"),
     projectionBadge: document.getElementById("projectionBadge"),
     projectionButtons: document.querySelectorAll("[data-projection]"),
     focusLocationA: document.getElementById("focusLocationA"),
@@ -2842,6 +2844,23 @@
     elements.region.toggleAttribute("hidden", !state.geographyVisible.regions);
     drawGeographyLabels(); syncGlobe();
   }));
+  function setGeographyPanel(open) {
+    elements.geographyControls.classList.toggle("is-open", open);
+    elements.geographyPanelToggle.setAttribute("aria-expanded", String(open));
+    if (!open) elements.geographyControls.querySelector(".geography-help").open = false;
+  }
+  elements.geographyPanelToggle.addEventListener("click", () => {
+    setGeographyPanel(!elements.geographyControls.classList.contains("is-open"));
+  });
+  document.addEventListener("click", (event) => {
+    if (!elements.geographyControls.contains(event.target)) setGeographyPanel(false);
+  });
+  elements.geographyControls.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setGeographyPanel(false);
+      elements.geographyPanelToggle.focus();
+    }
+  });
   const mapResize = new ResizeObserver(() => {
     if (state.projection === "globe") setView(state.zoom); else drawGeographyLabels();
   });
