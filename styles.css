@@ -601,7 +601,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   left: 0;
   width: min(960px, calc(100% - 32px));
   max-height: calc(100% - 28px);
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
   overflow: visible;
@@ -613,6 +613,8 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   backdrop-filter: blur(10px);
   transform: scale(var(--panel-scale, 1));
   transform-origin: top left;
+  container-type: inline-size;
+  container-name: climate-result;
 }
 
 .result-panel.dragging,
@@ -621,8 +623,8 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 }
 
 .result-heading {
-  min-height: 36px;
-  padding: 4px 6px 4px 8px;
+  min-height: 28px;
+  padding: 2px 5px 2px 7px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -723,9 +725,16 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 }
 
 .result-period { color: #5a706c; font-size: 0.68rem; white-space: nowrap; }
-.comparison-locations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 7px 9px; }
+.comparison-locations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 4px 7px; }
 .comparison-locations:not(.has-reference) { grid-template-columns: minmax(0, 1fr); }
-.location-card { min-width: 0; padding: 5px 9px; border-left: 4px solid; border-radius: 4px; }
+.location-card { min-width: 0; padding: 3px 7px; border-left: 3px solid; border-radius: 3px; }
+.comparison-locations:not(.has-reference) .location-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 10px; align-items: center; }
+.comparison-locations:not(.has-reference) .location-card-top { display: contents; }
+.comparison-locations:not(.has-reference) .location-role { grid-column: 1; grid-row: 1 / span 2; }
+.comparison-locations:not(.has-reference) .location-name { grid-column: 2; grid-row: 1; }
+.comparison-locations:not(.has-reference) .location-detail { grid-column: 2; grid-row: 2; }
+.comparison-locations:not(.has-reference) .location-actions { grid-column: 3; grid-row: 1 / span 2; }
+.location-actions .header-action { min-height: 24px; padding: 2px 5px; font-size: .6rem; }
 .reference-location { border-color: #2463b4; background: #edf4fd; }
 .current-location { border-color: #bd4818; background: #fff3e9; }
 .location-card-top, .location-actions { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
@@ -733,8 +742,8 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .location-role b { display: inline-grid; place-items: center; width: 19px; height: 19px; border-radius: 3px; color: #fff; background: #bd4818; }
 .reference-location .location-role b { background: #2463b4; }
 .reference-location .location-role > small { color: #526a86; font-size: 0.6rem; font-weight: 400; }
-.location-name { display: block; margin-top: 3px; font-size: 0.85rem; line-height: 1.35; overflow-wrap: anywhere; }
-.location-detail { display: block; margin-top: 2px; color: #526965; font-size: 0.63rem; line-height: 1.3; }
+.location-name { display: block; margin-top: 1px; font-size: 0.79rem; line-height: 1.35; overflow-wrap: anywhere; }
+.location-detail { display: block; margin-top: 0; color: #526965; font-size: 0.58rem; line-height: 1.3; }
 .location-detail[data-state="loading"] { color: #855613; }
 .location-detail[data-state="error"] { color: #a43221; }
 .location-card.is-empty { background: #f4f6f5; border-color: #a6b7b2; }
@@ -753,8 +762,8 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 
 .result-tabs button {
   min-width: 0;
-  min-height: 36px;
-  padding: 5px 4px;
+  min-height: 28px;
+  padding: 3px 4px;
   overflow: hidden;
   border: 0;
   border-bottom: 3px solid transparent;
@@ -793,40 +802,48 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 
 .overview-page {
   display: grid;
-  grid-template-rows: auto minmax(58px, auto) minmax(260px, 1fr) auto;
+  grid-template-columns: 158px minmax(0, 1fr);
+  grid-template-rows: minmax(330px, 1fr) auto;
+  grid-template-areas: "metrics profile" "footer footer";
   gap: 6px;
   overflow-y: auto;
 }
-
-.overview-page .status { padding: 0 2px; background: transparent; font-weight: 400; font-size: 0.58rem; }
-.overview-page .metric { justify-content: flex-start; padding: 5px 8px; }
-.overview-page .metric strong { font-size: 0.95rem; }
-.climate-profile { min-height: 260px; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto auto; gap: 4px; padding: 7px 8px; border: 1px solid #d8e2df; border-radius: 6px; background: #fff; }
-.profile-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
-.profile-heading h3 { margin: 0; font-size: 0.75rem; }
-.overview-legend { color: #657971; font-size: 0.58rem; }
-.climate-headline { margin: 0; color: #305748; font-weight: 700; font-size: 0.67rem; line-height: 1.4; }
-.climate-strips { min-height: 0; display: grid; grid-template-rows: repeat(4, minmax(36px, 1fr)); gap: 3px; }
-.climate-strip { min-height: 0; margin: 0; display: grid; grid-template-columns: 165px minmax(0, 1fr); gap: 5px; border-bottom: 1px solid #edf1ef; }
-.climate-strip figcaption { align-self: center; min-width: 0; display: grid; gap: 1px; font-size: 0.67rem; line-height: 1.35; }
+.overview-page > .metric-grid { grid-area: metrics; grid-template-columns: 1fr; grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 5px; }
+.overview-page .metric { min-width: 0; justify-content: center; padding: 5px 8px; border-top-width: 3px; }
+.overview-page .metric strong { font-size: 1rem; line-height: 1.3; overflow-wrap: anywhere; }
+.climate-profile { grid-area: profile; min-width: 0; min-height: 330px; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 4px; padding: 6px 7px 4px; border: 1px solid #d8e2df; border-radius: 6px; background: #fff; }
+.profile-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 3px 9px; }
+.profile-heading h3 { flex: 0 0 auto; margin: 0; font-size: 0.75rem; }
+.overview-legend { color: #657971; font-size: 0.56rem; }
+.climate-headline { min-width: 0; margin: 0; color: #305748; font-weight: 600; font-size: 0.63rem; line-height: 1.3; }
+.climate-strips { min-height: 0; display: grid; grid-template-rows: repeat(4, minmax(58px, 1fr)); gap: 3px; }
+.climate-strip { min-height: 0; margin: 0; display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 5px; border-bottom: 1px solid #edf1ef; }
+.climate-strip figcaption { align-self: center; min-width: 0; display: grid; gap: 2px; font-size: 0.67rem; line-height: 1.35; }
 .climate-strip figcaption strong { color: #a84b32; }
 .climate-strip.precipitation figcaption strong { color: #287bb5; }
 .climate-strip.solar figcaption strong { color: #9a6a13; }
 .climate-strip.humidity figcaption strong { color: #25816f; }
 .climate-strip figcaption small { font-size: 0.55rem; font-weight: 400; }
 .climate-strip figcaption span { color: #60726b; font-size: 0.57rem; }
-.climate-strip svg { display: block; width: 100%; height: 100%; min-height: 36px; overflow: visible; touch-action: pan-y; }
+.climate-strip svg { display: block; width: 100%; height: 100%; min-height: 58px; overflow: visible; touch-action: pan-y; }
 .climate-strip svg:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; }
 .overview-axis-label { font-size: 10px; fill: #63766e; }
 .overview-gridline { stroke: #dae3de; stroke-width: 0.7; }
 .overview-month-line { stroke: #e7eeea; stroke-width: 0.7; }
 .overview-cursor { stroke: #304d42; stroke-width: 1; stroke-dasharray: 3 2; }
-.overview-month-axis { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); padding-left: 199px; padding-right: 10px; font-size: 0.57rem; color: #5e7168; text-align: center; }
+.overview-month-axis { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); padding-left: 162px; padding-right: 10px; font-size: 0.57rem; color: #5e7168; text-align: center; }
 .overview-month-axis .active { background: #e4eee7; color: #18472e; font-weight: 800; border-radius: 2px; }
-.overview-readout { min-height: 20px; padding: 3px 5px; display: grid; gap: 1px; background: #f0f5f2; border-radius: 3px; color: #345649; font-size: 0.59rem; line-height: 1.35; font-variant-numeric: tabular-nums; }
+.overview-footer { grid-area: footer; min-width: 0; position: relative; display: flex; align-items: center; gap: 9px; min-height: 22px; border-top: 1px solid #e4ece7; padding-top: 3px; }
+.overview-footer-line { display: flex; align-items: baseline; gap: 10px; min-width: 0; overflow-x: auto; white-space: nowrap; scrollbar-width: thin; }
+.overview-footer-line > * { flex: 0 0 auto; }
+.overview-page .status { padding: 0; background: transparent; font-weight: 400; font-size: 0.55rem; }
+.overview-readout { min-height: 0; padding: 0; display: flex; gap: 10px; color: #345649; font-size: 0.57rem; line-height: 1.35; font-variant-numeric: tabular-nums; }
 .overview-chart-note { margin: 0; color: #718078; font-size: 0.53rem; line-height: 1.35; }
-.overview-source summary { color: #65776d; font-size: 0.58rem; cursor: pointer; }
-.overview-source[open] summary { margin-bottom: 4px; }
+.overview-source { flex: 0 0 auto; }
+.overview-source summary { color: #65776d; font-size: 0.58rem; cursor: pointer; white-space: nowrap; }
+.overview-source[open] .overview-source-popup { position: absolute; z-index: 3; bottom: calc(100% + 4px); left: 0; width: min(560px, 100%); max-height: 240px; overflow-y: auto; padding: 10px; border: 1px solid #baccbf; border-radius: 5px; background: #fff; box-shadow: 0 4px 15px #24483525; }
+
+.overview-source-popup .location-summary { margin: 0 0 5px; padding: 0; border: 0; background: transparent; }
 
 .chart-page { display: block; }
 
@@ -837,8 +854,8 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 }
 
 .drawer-close {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   flex: 0 0 auto;
   padding: 0;
   border-radius: 5px;
@@ -1316,7 +1333,7 @@ footer p + p { margin-top: 5px; }
   .header-action { min-height: 36px; padding-inline: 5px; font-size: 0.62rem; }
   .header-action .wide-label { display: none; }
   .compare-toggle { max-width: none; }
-  .drawer-close { width: 40px; height: 40px; }
+  .drawer-close { width: 32px; height: 32px; }
   #swapLocations { font-size: 0.56rem; padding-inline: 3px; }
   .comparison-locations { grid-template-columns: 1fr; gap: 4px; padding: 5px 6px; }
   .location-card { padding: 3px 6px; }
@@ -1325,24 +1342,21 @@ footer p + p { margin-top: 5px; }
   .location-role { font-size: 0.64rem; }
   .location-role b { width: 17px; height: 17px; }
   .result-tabs { padding: 3px 4px; gap: 2px; }
-  .result-tabs button { min-height: 40px; padding: 2px; font-size: 0.68rem; }
+  .result-tabs button { min-height: 32px; padding: 2px; font-size: 0.66rem; }
   .result-pages { padding: 4px 5px 5px; }
   .overview-page { gap: 3px; }
-  .overview-page { grid-template-rows: auto minmax(120px, auto) minmax(285px, 1fr) auto; }
-  .climate-profile { min-height: 285px; padding: 5px 4px; gap: 3px; }
+
+  .climate-profile { padding: 5px 4px; gap: 3px; }
   .profile-heading { flex-wrap: wrap; gap: 1px; }
   .profile-heading h3 { font-size: 0.7rem; }
   .overview-legend { font-size: 0.54rem; }
   .climate-headline { font-size: 0.63rem; }
-  .climate-strip { grid-template-columns: 1fr; grid-template-rows: auto minmax(30px, 1fr); gap: 0; }
-  .climate-strip figcaption { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; }
-  .climate-strip figcaption span { font-size: 0.55rem; }
-  .climate-strip svg { min-height: 30px; }
-  .climate-strips { grid-template-rows: repeat(4, minmax(46px, 1fr)); }
+
+
   .overview-month-axis { padding-left: 29px; font-size: 0.51rem; }
   .overview-readout { font-size: 0.57rem; }
   .overview-chart-note { font-size: 0.51rem; }
-  .overview-source summary { min-height: 32px; display: flex; align-items: center; }
+  .overview-source summary { min-height: 24px; display: flex; align-items: center; }
   .status { padding: 3px 5px; font-size: 0.56rem; }
   .location-summary { padding: 4px 5px; font-size: 0.56rem; }
   .location-summary small { display: none; }
@@ -1513,3 +1527,29 @@ footer p + p { margin-top: 5px; }
 .map-attribution span { margin-left: 5px; }
 .map-source-credits { margin-top: 5px; font-size: .7rem; }
 @media (max-width: 700px) { .map-attribution, .globe-mode .map-attribution { left: 8px; bottom: 174px; max-width: calc(100% - 16px); } }
+
+/* Let the charts use the height freed by the compact result controls. */
+@container climate-result (max-width: 700px) {
+  .overview-page { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(300px, 1fr) auto; grid-template-areas: "metrics" "profile" "footer"; gap: 4px; }
+  .overview-page > .metric-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto; gap: 4px; }
+  .overview-page .metric { padding: 3px 5px; }
+  .overview-page .metric span { font-size: .55rem; }
+  .overview-page .metric strong { font-size: .78rem; }
+  .overview-page .metric small { display: none; }
+  .climate-profile { min-height: 300px; }
+  .climate-strip { grid-template-columns: 104px minmax(0, 1fr); }
+  .overview-month-axis { padding-left: 138px; }
+  .comparison-locations:not(.has-reference) .location-card { display: block; }
+  .comparison-locations:not(.has-reference) .location-card-top { display: flex; }
+}
+@container climate-result (max-width: 450px) {
+  .comparison-locations { grid-template-columns: 1fr; }
+  .overview-page > .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, auto); }
+  .overview-page .metric { display: flex; flex-direction: row; align-items: baseline; justify-content: space-between; gap: 4px; }
+  .overview-page .metric strong { font-size: .77rem; white-space: nowrap; }
+  .climate-strip { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(42px, 1fr); gap: 0; }
+  .climate-strip figcaption span { font-size: .54rem; }
+  .climate-strip svg { min-height: 42px; }
+  .climate-strips { grid-template-rows: repeat(4, minmax(58px, 1fr)); }
+  .overview-month-axis { padding-left: 29px; font-size: .51rem; }
+}

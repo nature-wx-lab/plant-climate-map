@@ -2408,7 +2408,7 @@
       return item;
     }));
     if (overviewCursor === null) {
-      elements.overviewReadout.textContent = "グラフに触れると同じ月の4要素を確認 · 左右キーでも操作できます";
+      elements.overviewReadout.textContent = "触れる／左右キーで月別値";
       return;
     }
     const index = overviewCursor;

@@ -18,13 +18,13 @@
   <meta name="twitter:card" content="summary">
   <title>植物気候マップ｜Nature Wx Lab</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2318675b'/%3E%3Cpath d='M32 51V28M32 35C19 34 14 25 14 14c12 0 20 6 18 21zm0-2c13-1 18-10 18-21-12 0-20 6-18 21z' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css?v=20261003-context-maps">
+  <link rel="stylesheet" href="./styles.css?v=20261005-taller-overview">
   <script src="./vendor/d3-array-3.2.4.min.js" defer></script>
   <script src="./vendor/d3-geo-3.1.1.min.js" defer></script>
   <script src="./geography.js?v=20261003-label-spacing" defer></script>
   <script src="./globe.js?v=20261003-context-maps" defer></script>
   <script src="./map-context.js?v=20261003-context-maps" defer></script>
-  <script src="./app.js?v=20261003-context-maps" defer></script>
+  <script src="./app.js?v=20261005-taller-overview" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -310,8 +310,6 @@
 
           <div class="result-pages">
             <section id="resultPageOverview" class="result-page overview-page" role="tabpanel" aria-labelledby="resultTabOverview" data-result-page="overview">
-              <span id="requestStatus" class="status" role="status" aria-live="polite">地図をクリックしてください</span>
-
               <div class="metric-grid" aria-label="年平均値">
                 <article class="metric temperature">
                   <span>年平均気温</span>
@@ -336,8 +334,7 @@
               </div>
 
               <section class="climate-profile" aria-labelledby="climateProfileHeading">
-                <div class="profile-heading"><h3 id="climateProfileHeading">一年の気候</h3><span id="overviewLegend" class="overview-legend">月平均・同じ月軸で4要素を表示</span></div>
-                <p id="climateHeadline" class="climate-headline">地点を選ぶと、季節の特徴を表示します。</p>
+                <div class="profile-heading"><h3 id="climateProfileHeading">一年の気候</h3><p id="climateHeadline" class="climate-headline">地点を選ぶと、季節の特徴を表示します。</p></div>
                 <div class="climate-strips">
                   <figure class="climate-strip temperature"><figcaption><strong>気温 <small>℃</small></strong><span id="overviewTemperatureInsight">月平均と平均日最高・最低</span></figcaption><svg id="overviewTemperatureChart" role="img" tabindex="0" aria-label="月別気温"></svg></figure>
                   <figure class="climate-strip precipitation"><figcaption><strong>降水 <small>mm/月</small></strong><span id="overviewPrecipitationInsight">雨の多い月・少ない月</span></figcaption><svg id="overviewPrecipitationChart" role="img" tabindex="0" aria-label="月降水量"></svg></figure>
@@ -345,16 +342,22 @@
                   <figure class="climate-strip humidity"><figcaption><strong>湿度 <small>%</small></strong><span id="overviewHumidityInsight">相対湿度の季節変化</span></figcaption><svg id="overviewHumidityChart" role="img" tabindex="0" aria-label="月平均相対湿度"></svg></figure>
                 </div>
                 <div id="overviewMonthAxis" class="overview-month-axis" aria-hidden="true"></div>
-                <div id="overviewReadout" class="overview-readout" aria-live="polite">グラフに触れると、同じ月の4要素をまとめて確認できます。</div>
-                <p class="overview-chart-note">気温：赤＝平均日最高・濃色＝月平均・青＝平均日最低。月の平均であり、極端な暑さ・寒さや栽培限界を示しません。</p>
               </section>
 
-              <details class="overview-source"><summary>データの範囲・解像度</summary><div id="locationSummary" class="location-summary">
+              <div class="overview-footer">
+              <details class="overview-source"><summary>データの範囲・解像度</summary><div class="overview-source-popup"><div id="locationSummary" class="location-summary">
                 <strong>気象格子：約0.5°×0.625°（地図の枠）</strong>
                 <span>格子中心：—</span>
                 <span class="place-summary">国・地域：—｜周辺：—</span>
                 <small>日本は約1kmの独自推定値です。日本以外の気温・降水・湿度は選択したNASA格子の空間平均、日射は別の1°×1°格子です。</small>
-              </div></details>
+              </div><p class="overview-chart-note">気温は平均日最高・月平均・平均日最低の月ごとの平均です。極端な暑さ・寒さや栽培限界を示しません。</p></div></details>
+              <div class="overview-footer-line">
+                <span id="requestStatus" class="status" role="status" aria-live="polite">地図をクリックしてください</span>
+                <span id="overviewLegend" class="overview-legend">月平均・同じ月軸で4要素を表示</span>
+                <div id="overviewReadout" class="overview-readout" aria-live="polite">グラフに触れる／左右キーで月別値を確認</div>
+                <p class="overview-chart-note">気温：赤＝平均最高・濃色＝平均・青＝平均最低（月平均・栽培限界ではありません）</p>
+              </div>
+              </div>
             </section>
 
             <section id="resultPageTemperature" class="result-page chart-page" role="tabpanel" aria-labelledby="resultTabTemperature" data-result-page="temperature" hidden>
