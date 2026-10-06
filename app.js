@@ -1076,7 +1076,7 @@
     elements.focusPlantOrigin.disabled = !state.plantOriginBounds;
     elements.focusPlantOrigin.hidden = !state.plantOriginBounds;
     document.getElementById("plantOriginCaveat").hidden = !state.plantOriginBounds;
-    elements.plantChoiceState.textContent = visible ? "線を非表示" : state.plantOriginBounds ? "線を表示" : "原種未特定";
+    elements.plantChoiceState.textContent = visible ? "線を非表示" : state.plantOriginBounds ? "線を表示" : plant?.taxonRank === "horticultural-group" ? "園芸品種群" : "原種未特定";
     const originLabel = plant?.originKind === "cultigen" ? "栽培化した種の成立地域（目安）" : "原産地域の目安";
     if (visible) {
       const key = document.createElement("span");
@@ -1108,15 +1108,15 @@
     elements.plantReferenceStars.textContent = plantStars(plant);
     elements.plantReferenceStars.setAttribute("aria-label", `5段階中${plant.reference.stars}`);
     elements.plantReferenceReason.textContent = plant.reference.reason;
-    const kind = plant.taxonRank === "variety" ? "自然変種" : plant.taxonRank === "subspecies" ? "亜種" : plant.originKind === "cultigen" ? "栽培化した種" : plant.taxonRank === "cultivar" ? "園芸品種（原種未特定）" : "原種・種全体";
+    const kind = plant.taxonRank === "horticultural-group" ? "園芸品種群" : plant.taxonRank === "variety" ? "自然変種" : plant.taxonRank === "subspecies" ? "亜種" : plant.originKind === "cultigen" ? "栽培化した種" : plant.taxonRank === "cultivar" ? "園芸品種（原種未特定）" : "原種・種全体";
     elements.plantTaxonNote.textContent = `${kind}${plant.note ? " · " + plant.note : ""}`;
     elements.plantSource.href = plant.sourceUrl;
-    elements.plantSource.textContent = plant.originKind === "unresolved" ? "品種名の出典：RHS" : "分布の出典：Kew";
+    elements.plantSource.textContent = plant.taxonRank === "horticultural-group" ? "園芸品種群・栽培の出典：RHS" : plant.originKind === "unresolved" ? "品種名の出典：RHS" : "分布の出典：Kew";
     elements.plantReferenceSource.href = plant.reference.sourceUrl;
     elements.plantReferenceSource.hidden = plant.reference.sourceUrl === plant.sourceUrl;
     elements.plantOriginLabel.textContent = outline
       ? `黒い太線：${plant.originKind === "cultigen" ? "栽培化した種の成立地域" : "原産地域"}の目安`
-      : "原種未特定のため、原産地域の線は表示しません";
+      : plant.taxonRank === "horticultural-group" ? "園芸品種群のため、単一の原産地域の線は表示しません" : "原種未特定のため、原産地域の線は表示しません";
     updatePlantOrigin();
     // Keep the picker, scroll position and keyboard focus stable for rapid switching.
     elements.plantResults.querySelectorAll("button[data-plant-id]").forEach((button) => {
@@ -1139,14 +1139,16 @@
 
   async function loadPlantCatalog() {
     try {
-      const [catalog, ...outlineSources] = await Promise.all([
-        "./data/plants.json?v=20261006-species-tulips", "./data/plant-outlines.json?v=20261006-species-tulips",
-        "./data/plant-outlines-bulbs.json?v=20261006-species-tulips",
-      ].map(async (url) => {
+      const fetchCatalogJSON = async (url) => {
         const response = await fetch(url, { credentials: "same-origin", referrerPolicy: "no-referrer" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
-      }));
+      };
+      const catalog = await fetchCatalogJSON("./data/plants.json?v=20261006-catalog-1000");
+      if (!Array.isArray(catalog.outlineFiles) || !catalog.outlineFiles.length
+          || new Set(catalog.outlineFiles).size !== catalog.outlineFiles.length
+          || catalog.outlineFiles.some((name) => !/^plant-outlines(?:-bulbs|-(?:[3-9]|[1-9][0-9]+))?\.json$/.test(name))) throw new Error("植物分布ファイル名が不正です");
+      const outlineSources = await Promise.all(catalog.outlineFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=20261006-catalog-1000`)));
       if (catalog.schema !== 1 || !Array.isArray(catalog.plants) || !Array.isArray(catalog.categories)
           || outlineSources.some((source) => source.schema !== 1 || !source.outlines || !source.plantKeys
             || source.sourceSha256 !== catalog.regionSource?.sha256)) throw new Error("植物データ形式が不正です");

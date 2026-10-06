@@ -11,12 +11,13 @@ import struct
 import subprocess
 from pathlib import Path
 
-from build_deployment_manifest import japan_files
+from build_deployment_manifest import japan_files, plant_outline_files
 from verify_deployed_pages import EXPECTED_FILES as PUBLIC_FILES
 
 
 ROOT = Path(__file__).resolve().parents[1]
 JAPAN_FILES = set(japan_files(ROOT))
+PLANT_OUTLINE_FILES = set(plant_outline_files(ROOT))
 CLIMATE_LAYER_KEYS = ("temperature", "precipitation", "humidity", "solar")
 CLIMATE_LAYER_PERIODS = ("annual",) + tuple(f"{month:02d}" for month in range(1, 13))
 CLIMATE_LAYER_FILES = {
@@ -63,7 +64,7 @@ SOURCE_FILES = {
     "sitemap.xml",
     "styles.css",
     "data/climate-layers/manifest.json",
-} | CLIMATE_LAYER_FILES | JAPAN_FILES
+} | CLIMATE_LAYER_FILES | JAPAN_FILES | PLANT_OUTLINE_FILES
 DEPLOY_FILES = {
     "404.html",
     "app.js",
@@ -86,7 +87,7 @@ DEPLOY_FILES = {
     "sitemap.xml",
     "styles.css",
     "data/climate-layers/manifest.json",
-} | CLIMATE_LAYER_FILES | JAPAN_FILES
+} | CLIMATE_LAYER_FILES | JAPAN_FILES | PLANT_OUTLINE_FILES
 
 
 def require(condition: bool, message: str) -> None:
@@ -393,31 +394,35 @@ console.log("COMPARISON_MATH_OK");
 def verify_plant_catalog(app: str) -> None:
     catalog = json.loads((ROOT / 'data/plants.json').read_text())
     outlines = json.loads((ROOT / 'data/plant-outlines.json').read_text())
-    bulb_outlines = json.loads((ROOT / 'data/plant-outlines-bulbs.json').read_text())
-    require(bulb_outlines['schema'] == outlines['schema']
-            and bulb_outlines['sourceSha256'] == outlines['sourceSha256']
-            and bulb_outlines['simplificationDegrees'] == outlines['simplificationDegrees'],
-            'bulb boundary source or drawing precision mismatch')
-    require(not (set(outlines['plantKeys']) & set(bulb_outlines['plantKeys']))
-            and not (set(outlines['outlines']) & set(bulb_outlines['outlines'])),
-            'outline chunks must not override another chunk')
-    outlines['plantKeys'].update(bulb_outlines['plantKeys'])
-    outlines['outlines'].update(bulb_outlines['outlines'])
+    for filename in catalog['outlineFiles'][1:]:
+        chunk = json.loads((ROOT / 'data' / filename).read_text())
+        require(chunk['schema'] == outlines['schema']
+                and chunk['sourceSha256'] == outlines['sourceSha256']
+                and chunk['simplificationDegrees'] == outlines['simplificationDegrees'],
+                'outline source or drawing precision mismatch')
+        require(not (set(outlines['plantKeys']) & set(chunk['plantKeys']))
+                and not (set(outlines['outlines']) & set(chunk['outlines'])),
+                'outline chunks must not override another chunk')
+        require((ROOT / 'data' / filename).stat().st_size <= 3 * 1024 * 1024, 'outline chunk too large')
+        outlines['plantKeys'].update(chunk['plantKeys'])
+        outlines['outlines'].update(chunk['outlines'])
     plants = catalog['plants']
     require(catalog['schema'] == outlines['schema'] == 1, 'plant schema mismatch')
     require(catalog['regionSource']['sha256'] == outlines['sourceSha256'], 'plant boundary source mismatch')
     require(catalog['ratingMethod']['kind'] == 'editorial-provisional', 'rating method missing')
-    expected = {'tropical':40, 'vegetables':25, 'annuals':20, 'perennials':20, 'bulbs':28, 'trees':20,
-                'australian':33, 'succulents':25, 'caudex':28, 'tillandsia':22}
+    expected = {'tropical':159, 'vegetables':75, 'annuals':69, 'perennials':143, 'bulbs':114, 'trees':117,
+                'australian':70, 'succulents':147, 'caudex':62, 'tillandsia':44}
     require(catalog['checkedAt'] == '2026-10-06', 'catalog update date missing')
-    require(len(plants) == 261 and len({p['id'] for p in plants}) == 261, 'plant count or duplicate ID')
+    require(len(plants) == 1000 and len({p['id'] for p in plants}) == 1000, 'plant count or duplicate ID')
     require({c['id'] for c in catalog['categories']} == set(expected), 'plant categories mismatch')
     require({c:sum(p['category'] == c for p in plants) for c in expected} == expected, 'genre count mismatch')
-    require(len({p['scientificName'] for p in plants}) == 261, 'duplicate accepted taxa')
+    require(len({p['scientificName'] for p in plants}) == 1000, 'duplicate accepted taxa or garden groups')
+    require(all(p['checkedAt'] == '2026-10-06' for p in plants[261:]), 'new source check date missing')
+    require(sum(p['taxonRank'] == 'horticultural-group' for p in plants) == 15, 'familiar garden groups missing')
     for plant in plants:
-        require(plant['taxonRank'] in ('species','variety','subspecies','cultivar'), 'invalid taxon rank')
+        require(plant['taxonRank'] in ('species','variety','subspecies','cultivar','horticultural-group'), 'invalid taxon rank')
         require(plant['originKind'] in ('native','cultigen','unresolved'), 'invalid origin kind')
-        require(plant['checkedAt'] == ('2026-10-06' if plant['category'] == 'bulbs' else '2026-09-26'), 'source check date missing')
+        require(plant['checkedAt'] in ('2026-10-06','2026-09-26'), 'source check date missing')
         additional = plant.get('additionalCategories', [])
         require(isinstance(additional, list) and len(additional) == len(set(additional))
                 and set(additional) <= set(expected) - {plant['category']}, 'invalid additional genre')
@@ -425,7 +430,9 @@ def verify_plant_catalog(app: str) -> None:
         rating = plant['reference']
         require(type(rating['stars']) is int and 1 <= rating['stars'] <= 5 and rating['reason'] and rating['sourceUrl'].startswith('https://'), 'plant rating lacks reason or source')
         if plant['originKind'] == 'unresolved':
-            require(plant['id'] == 'philodendron-birkin' and not plant['nativeAreas'] and not plant['regionCodes'] and plant['id'] not in outlines['plantKeys'], 'unresolved origin must have no outline')
+            require((plant['id'] == 'philodendron-birkin' or plant['taxonRank'] == 'horticultural-group')
+                    and not plant['nativeAreas'] and not plant['regionCodes'] and plant['id'] not in outlines['plantKeys']
+                    and rating['stars'] <= 2, 'unresolved origin must have low reference rating and no outline')
         else:
             require(len(plant['nativeAreas']) == len(plant['regionCodes']) and plant['regionCodes'] == sorted(set(plant['regionCodes'])), 'native region mapping incomplete')
             require(outlines['plantKeys'][plant['id']] == '-'.join(plant['regionCodes']), 'outline region mismatch')
@@ -445,15 +452,15 @@ def verify_plant_catalog(app: str) -> None:
     species_tulips = {'Tulipa clusiana', 'Tulipa humilis', 'Tulipa tarda', 'Tulipa turkestanica',
                      'Tulipa saxatilis', 'Tulipa linifolia', 'Tulipa sylvestris', 'Tulipa kaufmanniana'}
     bulbs |= species_tulips
-    require({p['scientificName'] for p in plants if p['category'] == 'bulbs'} == bulbs,
+    require(bulbs <= {p['scientificName'] for p in plants if p['category'] == 'bulbs'},
             'selected bulb species missing')
-    require(set(bulb_outlines['plantKeys']) == {p['id'] for p in plants if p['category'] == 'bulbs'},
-            'bulb outline chunk membership mismatch')
+    require(set(outlines['plantKeys']) == {p['id'] for p in plants if p['regionCodes']},
+            'outline chunk membership mismatch')
     require(next(c['label'] for c in catalog['categories'] if c['id'] == 'bulbs') == '草花（球根植物）',
             'bulb genre label mismatch')
     require(by_id['liatris-spicata']['category'] == 'perennials'
             and by_id['liatris-spicata'].get('additionalCategories') == ['bulbs']
-            and sum(p['category'] == 'bulbs' or 'bulbs' in p.get('additionalCategories', []) for p in plants) == 29,
+            and sum(p['category'] == 'bulbs' or 'bulbs' in p.get('additionalCategories', []) for p in plants) == 115,
             'shared perennial/bulb membership missing')
     require(all(p['note'] and p['reference']['reason'] for p in plants if p['category'] == 'bulbs'),
             'bulb species or cultivar explanation missing')
@@ -475,7 +482,7 @@ def verify_plant_catalog(app: str) -> None:
                   'Phlox paniculata', 'Monarda didyma', 'Helenium autumnale',
                   'Campanula persicifolia', 'Lamprocapnos spectabilis', 'Tricyrtis hirta',
                   'Farfugium japonicum', 'Paeonia lactiflora'}
-    require({p['scientificName'] for p in plants if p['category'] == 'perennials'} == perennials,
+    require(perennials <= {p['scientificName'] for p in plants if p['category'] == 'perennials'},
             'requested perennial species missing')
     require('夏' in by_id['lamprocapnos-spectabilis']['reference']['reason']
             and '休眠' in by_id['lamprocapnos-spectabilis']['reference']['reason'], 'summer dormancy explanation missing')
@@ -484,7 +491,7 @@ def verify_plant_catalog(app: str) -> None:
              'Spiraea thunbergii', 'Spiraea cantoniensis', 'Spiraea japonica', 'Kerria japonica',
              'Deutzia crenata', 'Cornus florida', 'Cornus kousa', 'Styrax japonicus',
              'Chimonanthus praecox', 'Cercis chinensis', 'Syringa vulgaris', 'Magnolia denudata'}
-    require({p['scientificName'] for p in plants if p['category'] == 'trees'} == trees,
+    require(trees <= {p['scientificName'] for p in plants if p['category'] == 'trees'},
             'requested flowering tree species missing')
     require('遅霜' in by_id['magnolia-denudata']['reference']['reason']
             and '改良' in by_id['syringa-vulgaris']['reference']['reason'], 'flowering/cultivar explanation missing')
@@ -535,7 +542,7 @@ def verify_plant_catalog(app: str) -> None:
             'Tillandsia research must refer to original species')
     select_body = re.search(r'^  function selectPlant\([\s\S]*?^  }', app, re.M).group(0)
     require('setView(' not in select_body and 'focusPlantOrigin(' not in select_body, 'plant selection must preserve view')
-    print('PLANT_CATALOG_OK 261 taxa, 10 genres, 29 bulb choices, 8 native tulip species, reference reasons, outlines')
+    print('PLANT_CATALOG_OK 1000 entries, 10 genres, 115 bulb choices, 15 garden groups, reference reasons, outlines')
 
 
 def main() -> None:
@@ -568,7 +575,7 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261006-species-tulips\" defer></script>" in index, "versioned local deferred script missing")
+    require("<script src=\"./app.js?v=20261006-catalog-1000\" defer></script>" in index, "versioned local deferred script missing")
     require('href="./styles.css?v=20261005-taller-overview"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")

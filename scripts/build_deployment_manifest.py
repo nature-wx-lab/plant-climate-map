@@ -61,6 +61,15 @@ def japan_files(root: Path) -> tuple[str, ...]:
     return tuple(files)
 
 
+def plant_outline_files(root: Path) -> tuple[str, ...]:
+    catalog = json.loads((root / 'data/plants.json').read_text())
+    names = catalog.get('outlineFiles', ['plant-outlines.json', 'plant-outlines-bulbs.json'])
+    if (not isinstance(names, list) or not names or len(names) != len(set(names))
+            or any(not isinstance(name, str) or not re.fullmatch(r'plant-outlines(?:-bulbs|-(?:[3-9]|[1-9][0-9]+))?\.json', name) for name in names)):
+        raise SystemExit('invalid public plant outline filenames')
+    return tuple('data/' + name for name in names)
+
+
 def sha256(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
@@ -83,7 +92,7 @@ def main() -> None:
     destination.mkdir(parents=True)
 
     files: dict[str, dict[str, int | str]] = {}
-    for relative in DEPLOY_FILES + japan_files(root):
+    for relative in tuple(dict.fromkeys(DEPLOY_FILES + japan_files(root) + plant_outline_files(root))):
         source = root / relative
         if not source.is_file() or source.is_symlink():
             raise SystemExit(f"invalid deploy source: {relative}")

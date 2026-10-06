@@ -13,6 +13,7 @@ from shapely.ops import unary_union
 
 ROOT = Path(__file__).resolve().parents[1]
 TOLERANCE = 0.025  # degrees; drawing simplification, never a habitat boundary
+CHUNK_BYTES = 2500000
 
 
 def polygons(geometry):
@@ -32,18 +33,48 @@ def build(source_path: Path) -> None:
     features = json.loads(raw)['features']
     regions = {f['properties']['LEVEL3_COD']: set_precision(make_valid(shape(f['geometry'])), 0.0001)
                for f in features}
-    outlines = {}
-    plant_keys = {}
-    bulb_outlines = {}
-    bulb_keys = {}
-    for plant in sorted(catalog['plants'], key=lambda plant: plant['category'] == 'bulbs'):
+    filenames = catalog.get('outlineFiles', ['plant-outlines.json', 'plant-outlines-bulbs.json'])
+    existing_keys, existing_outlines = {}, {}
+    for filename in filenames:
+        chunk = json.loads((ROOT / 'data' / filename).read_text())
+        if chunk['sourceSha256'] != digest or chunk['simplificationDegrees'] != TOLERANCE:
+            raise ValueError('Existing outline source or precision differs')
+        if set(existing_keys) & set(chunk['plantKeys']) or set(existing_outlines) & set(chunk['outlines']):
+            raise ValueError('Duplicate keys in existing chunks')
+        existing_keys.update(chunk['plantKeys'])
+        existing_outlines.update(chunk['outlines'])
+    if set(existing_keys) - {p['id'] for p in catalog['plants']}:
+        raise ValueError('Existing outline references removed catalog entries')
+    outlines, plant_keys = {}, {}
+    def encoded():
+        return (json.dumps({'schema': 1, 'sourceSha256': digest,
+                'simplificationDegrees': TOLERANCE, 'plantKeys': plant_keys,
+                'outlines': outlines}, ensure_ascii=False, separators=(',', ':')) + '\n').encode()
+    def flush():
+        nonlocal outlines, plant_keys
+        if not plant_keys:
+            return
+        filename = f'plant-outlines-{len(filenames) + 1}.json'
+        raw_chunk = encoded()
+        if len(raw_chunk) > CHUNK_BYTES:
+            raise ValueError('Outline chunk exceeds size limit')
+        (ROOT / 'data' / filename).write_bytes(raw_chunk)
+        filenames.append(filename)
+        existing_keys.update(plant_keys)
+        existing_outlines.update(outlines)
+        print(f'PLANT_OUTLINES_OK file={filename} plants={len(plant_keys)} geometries={len(outlines)} bytes={len(raw_chunk)}')
+        outlines, plant_keys = {}, {}
+    for plant in catalog['plants']:
         codes = plant['regionCodes']
         if not codes:
             continue
         key = '-'.join(codes)
-        is_bulb = plant['category'] == 'bulbs'
-        (bulb_keys if is_bulb else plant_keys)[plant['id']] = key
-        if key in outlines or key in bulb_outlines:
+        if plant['id'] in existing_keys:
+            if existing_keys[plant['id']] != key:
+                raise ValueError('Existing plant distribution changed; rebuild explicitly')
+            continue
+        if key in existing_outlines or key in outlines:
+            plant_keys[plant['id']] = key
             continue
         merged = unary_union([regions[code] for code in codes])
         # Exterior rings only: connected regions share one outer line; islands stay separate.
@@ -55,15 +86,17 @@ def build(source_path: Path) -> None:
                 rings.append(ring)
         if not rings:
             raise ValueError(f"No outline for {plant['id']}")
-        (bulb_outlines if is_bulb else outlines)[key] = {'rings': rings}
-    # Keep each public JSON within the file limit without changing drawing precision.
-    for filename, keys, shapes in [('plant-outlines.json', plant_keys, outlines),
-                                   ('plant-outlines-bulbs.json', bulb_keys, bulb_outlines)]:
-        result = {'schema': 1, 'sourceSha256': digest, 'simplificationDegrees': TOLERANCE,
-                  'plantKeys': keys, 'outlines': shapes}
-        output = ROOT / 'data' / filename
-        output.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')) + '\n')
-        print(f'PLANT_OUTLINES_OK file={filename} plants={len(keys)} geometries={len(shapes)} bytes={output.stat().st_size}')
+        plant_keys[plant['id']] = key
+        outlines[key] = {'rings': rings}
+        if len(encoded()) > CHUNK_BYTES:
+            del plant_keys[plant['id']]
+            del outlines[key]
+            flush()
+            plant_keys[plant['id']] = key
+            outlines[key] = {'rings': rings}
+    flush()
+    catalog['outlineFiles'] = filenames
+    (ROOT / 'data/plants.json').write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + '\n')
 
 
 if __name__ == '__main__':
