@@ -1058,8 +1058,15 @@
       const stars = document.createElement("span");
       stars.className = "plant-result-stars";
       stars.textContent = plantStars(plant);
-      stars.setAttribute("aria-label", `気候の参考度5段階中${plant.reference.stars}（暫定）`);
-      button.append(name, stars, scientific);
+      stars.setAttribute("aria-label", `原産地の参考度5段階中${plant.reference.stars}（暫定）`);
+      const rating = document.createElement("span");
+      rating.className = "plant-result-rating";
+      const ratingLabel = document.createElement("span");
+      ratingLabel.className = "plant-rating-label";
+      ratingLabel.textContent = "原産地の参考度";
+      ratingLabel.setAttribute("aria-hidden", "true");
+      rating.append(ratingLabel, stars);
+      button.append(name, rating, scientific);
       fragment.append(button);
     }
     elements.plantResults.replaceChildren(fragment);
