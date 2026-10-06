@@ -29662,68 +29662,6 @@
       }
     },
     {
-      "id": "rosa-moyesii",
-      "category": "trees",
-      "name": "ロサ・モエシー",
-      "scientificName": "Rosa moyesii",
-      "aliases": [],
-      "taxonRank": "species",
-      "originKind": "native",
-      "nativeAreas": [
-        "China North-Central",
-        "China South-Central",
-        "Qinghai",
-        "Tibet"
-      ],
-      "regionCodes": [
-        "CHC",
-        "CHN",
-        "CHQ",
-        "CHT"
-      ],
-      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:733397-1",
-      "checkedAt": "2026-10-06",
-      "note": "実生・挿し木・接ぎ木や品種によって条件が変わるため、植栽する系統と現地の標高を確認してください。",
-      "reference": {
-        "stars": 4,
-        "reason": "ロサ・モエシーを学名の種として育てる場合、掲載地域の季節ごとの気温・降水を比較する手がかりにできます。品種別の性質と現地の生育場所は未評価のため暫定評価です。",
-        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:733397-1",
-        "basis": "distribution"
-      }
-    },
-    {
-      "id": "rosa-roxburghii",
-      "category": "trees",
-      "name": "ロサ・ロクスブルギー",
-      "scientificName": "Rosa roxburghii",
-      "aliases": [],
-      "taxonRank": "species",
-      "originKind": "native",
-      "nativeAreas": [
-        "China North-Central",
-        "China South-Central",
-        "China Southeast",
-        "East Himalaya",
-        "Tibet"
-      ],
-      "regionCodes": [
-        "CHC",
-        "CHN",
-        "CHS",
-        "CHT",
-        "EHM"
-      ],
-      "sourceUrl": "https://powo.science.kew.org/taxon/734056-1",
-      "checkedAt": "2026-10-06",
-      "note": "実生・挿し木・接ぎ木や品種によって条件が変わるため、植栽する系統と現地の標高を確認してください。",
-      "reference": {
-        "stars": 4,
-        "reason": "ロサ・ロクスブルギーを学名の種として育てる場合、掲載地域の季節ごとの気温・降水を比較する手がかりにできます。品種別の性質と現地の生育場所は未評価のため暫定評価です。",
-        "sourceUrl": "https://powo.science.kew.org/taxon/734056-1",
-        "basis": "distribution"
-      }
-    },
-    {
       "id": "rosa-laevigata",
       "category": "trees",
       "name": "ナニワイバラ",
@@ -30326,146 +30264,6 @@
         "stars": 4,
         "reason": "ヤクシマシャクナゲを学名の種として育てる場合、掲載地域の季節ごとの気温・降水を比較する手がかりにできます。品種別の性質と現地の生育場所は未評価のため暫定評価です。",
         "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:333624-1",
-        "basis": "distribution"
-      }
-    },
-    {
-      "id": "rhododendron-maximum",
-      "category": "trees",
-      "name": "ロドデンドロン・マキシマム",
-      "scientificName": "Rhododendron maximum",
-      "aliases": [],
-      "taxonRank": "species",
-      "originKind": "native",
-      "nativeAreas": [
-        "Alabama",
-        "Connecticut",
-        "Delaware",
-        "Georgia",
-        "Kentucky",
-        "Maine",
-        "Maryland",
-        "Massachusetts",
-        "New Hampshire",
-        "New Jersey",
-        "New York",
-        "North Carolina",
-        "Ohio",
-        "Pennsylvania",
-        "Rhode I.",
-        "South Carolina",
-        "Tennessee",
-        "Vermont",
-        "Virginia",
-        "West Virginia"
-      ],
-      "regionCodes": [
-        "ALA",
-        "CNT",
-        "DEL",
-        "GEO",
-        "KTY",
-        "MAI",
-        "MAS",
-        "MRY",
-        "NCA",
-        "NWH",
-        "NWJ",
-        "NWY",
-        "OHI",
-        "PEN",
-        "RHO",
-        "SCA",
-        "TEN",
-        "VER",
-        "VRG",
-        "WVA"
-      ],
-      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:219492-2",
-      "checkedAt": "2026-10-06",
-      "note": "実生・挿し木・接ぎ木や品種によって条件が変わるため、植栽する系統と現地の標高を確認してください。",
-      "reference": {
-        "stars": 3,
-        "reason": "ロドデンドロン・マキシマムは20の掲載地域に分布します。地域間の気候差が大きく、栽培株の由来や生育場所を絞らない比較は参考度が下がります（暫定）。",
-        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:219492-2",
-        "basis": "distribution"
-      }
-    },
-    {
-      "id": "rhododendron-ponticum",
-      "category": "trees",
-      "name": "ロドデンドロン・ポンティクム",
-      "scientificName": "Rhododendron ponticum",
-      "aliases": [],
-      "taxonRank": "species",
-      "originKind": "native",
-      "nativeAreas": [
-        "Bulgaria",
-        "Lebanon-Syria",
-        "North Caucasus",
-        "Portugal",
-        "Spain",
-        "Transcaucasus",
-        "Türkiye",
-        "Türkiye-in-Europe"
-      ],
-      "regionCodes": [
-        "BUL",
-        "LBS",
-        "NCS",
-        "POR",
-        "SPA",
-        "TCS",
-        "TUE",
-        "TUR"
-      ],
-      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:333114-1",
-      "checkedAt": "2026-10-06",
-      "note": "実生・挿し木・接ぎ木や品種によって条件が変わるため、植栽する系統と現地の標高を確認してください。",
-      "reference": {
-        "stars": 4,
-        "reason": "ロドデンドロン・ポンティクムを学名の種として育てる場合、掲載地域の季節ごとの気温・降水を比較する手がかりにできます。品種別の性質と現地の生育場所は未評価のため暫定評価です。",
-        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:333114-1",
-        "basis": "distribution"
-      }
-    },
-    {
-      "id": "rhododendron-arboreum",
-      "category": "trees",
-      "name": "ロドデンドロン・アルボレウム",
-      "scientificName": "Rhododendron arboreum",
-      "aliases": [],
-      "taxonRank": "species",
-      "originKind": "native",
-      "nativeAreas": [
-        "Assam",
-        "East Himalaya",
-        "India",
-        "Myanmar",
-        "Nepal",
-        "Pakistan",
-        "Sri Lanka",
-        "Tibet",
-        "West Himalaya"
-      ],
-      "regionCodes": [
-        "ASS",
-        "CHT",
-        "EHM",
-        "IND",
-        "MYA",
-        "NEP",
-        "PAK",
-        "SRL",
-        "WHM"
-      ],
-      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:331945-1",
-      "checkedAt": "2026-10-06",
-      "note": "実生・挿し木・接ぎ木や品種によって条件が変わるため、植栽する系統と現地の標高を確認してください。",
-      "reference": {
-        "stars": 4,
-        "reason": "ロドデンドロン・アルボレウムを学名の種として育てる場合、掲載地域の季節ごとの気温・降水を比較する手がかりにできます。品種別の性質と現地の生育場所は未評価のため暫定評価です。",
-        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:331945-1",
         "basis": "distribution"
       }
     },
@@ -33806,30 +33604,6 @@
         "stars": 4,
         "reason": "ヒイラギを学名の種として育てる場合、掲載地域の季節ごとの気温・降水を比較する手がかりにできます。品種別の性質と現地の生育場所は未評価のため暫定評価です。",
         "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:610885-1",
-        "basis": "distribution"
-      }
-    },
-    {
-      "id": "osmanthus-delavayi",
-      "category": "trees",
-      "name": "オスマンサス・デラバイ",
-      "scientificName": "Osmanthus delavayi",
-      "aliases": [],
-      "taxonRank": "species",
-      "originKind": "native",
-      "nativeAreas": [
-        "China South-Central"
-      ],
-      "regionCodes": [
-        "CHC"
-      ],
-      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:610868-1",
-      "checkedAt": "2026-10-06",
-      "note": "実生・挿し木・接ぎ木や品種によって条件が変わるため、植栽する系統と現地の標高を確認してください。",
-      "reference": {
-        "stars": 4,
-        "reason": "オスマンサス・デラバイを学名の種として育てる場合、掲載地域の季節ごとの気温・降水を比較する手がかりにできます。品種別の性質と現地の生育場所は未評価のため暫定評価です。",
-        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:610868-1",
         "basis": "distribution"
       }
     },
@@ -40811,6 +40585,313 @@
         "sourceUrl": "https://www.rhs.org.uk/plants/articles/graham-rice/perennials-and-bulbs/get-growing-lilies",
         "basis": "cultivation"
       }
+    },
+    {
+      "id": "malus-domestica",
+      "category": "trees",
+      "name": "リンゴ（種全体）",
+      "scientificName": "Malus domestica",
+      "aliases": [
+        "林檎",
+        "りんご",
+        "アップル"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Afghanistan",
+        "Kazakhstan",
+        "Kirgizstan",
+        "Pakistan",
+        "Qinghai",
+        "Tadzhikistan",
+        "Uzbekistan",
+        "Xinjiang"
+      ],
+      "regionCodes": [
+        "AFG",
+        "CHQ",
+        "CHX",
+        "KAZ",
+        "KGZ",
+        "PAK",
+        "TZK",
+        "UZB"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:726282-1",
+      "checkedAt": "2026-10-06",
+      "note": "Kewの種全体の自生分布。市販リンゴの品種や接ぎ木の台木を、この分布だけで説明するものではありません。",
+      "reference": {
+        "stars": 2,
+        "reason": "RHSは品種の選択と台木による生育の違いを説明しています。原産地域の気候は季節の比較に使い、栽培品種や台木の条件を優先するため参考度を低めにしています。",
+        "sourceUrl": "https://www.rhs.org.uk/fruit/apples/grow-your-own",
+        "basis": "cultivation"
+      }
+    },
+    {
+      "id": "vitis-vinifera",
+      "category": "trees",
+      "name": "ブドウ（ビニフェラ種）",
+      "scientificName": "Vitis vinifera",
+      "aliases": [
+        "葡萄",
+        "ぶどう",
+        "ヨーロッパブドウ",
+        "ビニフェラ"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Albania",
+        "Austria",
+        "Bulgaria",
+        "Corse",
+        "Cyprus",
+        "Czechia-Slovakia",
+        "France",
+        "Germany",
+        "Greece",
+        "Hungary",
+        "Iran",
+        "Iraq",
+        "Italy",
+        "Kirgizstan",
+        "Krym",
+        "Lebanon-Syria",
+        "North Caucasus",
+        "NW. Balkan Pen.",
+        "Palestine",
+        "Romania",
+        "Sardegna",
+        "Sicilia",
+        "Switzerland",
+        "Tadzhikistan",
+        "Transcaucasus",
+        "Turkmenistan",
+        "Türkiye",
+        "Türkiye-in-Europe",
+        "Ukraine",
+        "Uzbekistan"
+      ],
+      "regionCodes": [
+        "ALB",
+        "AUT",
+        "BUL",
+        "COR",
+        "CYP",
+        "CZE",
+        "FRA",
+        "GER",
+        "GRC",
+        "HUN",
+        "IRN",
+        "IRQ",
+        "ITA",
+        "KGZ",
+        "KRY",
+        "LBS",
+        "NCS",
+        "PAL",
+        "ROM",
+        "SAR",
+        "SIC",
+        "SWI",
+        "TCS",
+        "TKM",
+        "TUE",
+        "TUR",
+        "TZK",
+        "UKR",
+        "UZB",
+        "YUG"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:30478388-2",
+      "checkedAt": "2026-10-06",
+      "note": "Vitis viniferaの種全体。種間交配の園芸ブドウを含む、すべてのブドウ品種の原産地としては扱いません。品種別の条件も確認してください。",
+      "reference": {
+        "stars": 3,
+        "reason": "種全体の自生分布が広く、地域による気候差があります。栽培株の由来を絞らない比較は参考度が下がります（暫定）。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:30478388-2",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "diospyros-kaki",
+      "category": "trees",
+      "name": "カキ（種全体）",
+      "scientificName": "Diospyros kaki",
+      "aliases": [
+        "柿",
+        "かき",
+        "甘柿",
+        "渋柿"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Assam",
+        "China North-Central",
+        "China South-Central",
+        "China Southeast",
+        "Hainan",
+        "Taiwan",
+        "Vietnam"
+      ],
+      "regionCodes": [
+        "ASS",
+        "CHC",
+        "CHH",
+        "CHN",
+        "CHS",
+        "TAI",
+        "VIE"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/322553-1",
+      "checkedAt": "2026-10-06",
+      "note": "Kewの種全体の自生分布。甘柿・渋柿などの品種ごとの性質は、原産地域の気候とは別に確認してください。",
+      "reference": {
+        "stars": 3,
+        "reason": "自生地域の季節を比較できますが、分布資料だけでは栽培品種の違いを評価できません。種全体を使う比較のため参考度を控えめにしています（暫定）。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/322553-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "vaccinium-corymbosum",
+      "category": "trees",
+      "name": "ハイブッシュブルーベリー（コリムボスム原種）",
+      "scientificName": "Vaccinium corymbosum",
+      "aliases": [
+        "ブルーベリー",
+        "ハイブッシュ",
+        "コリムボスム"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Alabama",
+        "Connecticut",
+        "Delaware",
+        "Florida",
+        "Georgia",
+        "Illinois",
+        "Indiana",
+        "Kentucky",
+        "Maine",
+        "Maryland",
+        "Massachusetts",
+        "Michigan",
+        "Missouri",
+        "New Brunswick",
+        "New Hampshire",
+        "New Jersey",
+        "New York",
+        "North Carolina",
+        "Nova Scotia",
+        "Ohio",
+        "Ontario",
+        "Pennsylvania",
+        "Québec",
+        "Rhode I.",
+        "South Carolina",
+        "Tennessee",
+        "Vermont",
+        "Virginia",
+        "West Virginia"
+      ],
+      "regionCodes": [
+        "ALA",
+        "CNT",
+        "DEL",
+        "FLA",
+        "GEO",
+        "ILL",
+        "INI",
+        "KTY",
+        "MAI",
+        "MAS",
+        "MIC",
+        "MRY",
+        "MSO",
+        "NBR",
+        "NCA",
+        "NSC",
+        "NWH",
+        "NWJ",
+        "NWY",
+        "OHI",
+        "ONT",
+        "PEN",
+        "QUE",
+        "RHO",
+        "SCA",
+        "TEN",
+        "VER",
+        "VRG",
+        "WVA"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:261823-2",
+      "checkedAt": "2026-10-06",
+      "note": "コリムボスムの原種・種全体。サザンハイブッシュの交配群や、別種のラビットアイを一律に含める項目ではありません。品種の系統を確かめて比較してください。",
+      "reference": {
+        "stars": 3,
+        "reason": "北米の自生分布が広く、地域による気候差があります。栽培品種の由来を絞らない比較は参考度が下がります（暫定）。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:261823-2",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "garden-strawberries",
+      "category": "vegetables",
+      "name": "イチゴ（園芸交配品種群）",
+      "scientificName": "Fragaria × ananassa (garden cultivars)",
+      "aliases": [
+        "苺",
+        "いちご",
+        "ストロベリー",
+        "オランダイチゴ",
+        "園芸品種",
+        "交配品種"
+      ],
+      "taxonRank": "horticultural-group",
+      "originKind": "unresolved",
+      "nativeAreas": [],
+      "regionCodes": [],
+      "sourceUrl": "https://www.rhs.org.uk/plants/106127/fragaria-ananassa-%28f%29/details",
+      "checkedAt": "2026-10-06",
+      "note": "家庭菜園の園芸イチゴ。ワイルドストロベリー（Fragaria vesca）は別の項目。異なる親種に由来する交配品種群として掲載。 単一の原産地域を断定せず、地図には原産地域の線を表示しません。",
+      "reference": {
+        "stars": 2,
+        "reason": "RHSはチリイチゴとバージニアイチゴの交配に由来する園芸イチゴと説明しています。原種ひとつの分布を流通品種全体の性質として扱えないため低めの評価です。",
+        "sourceUrl": "https://www.rhs.org.uk/plants/106127/fragaria-ananassa-%28f%29/details",
+        "basis": "cultivation"
+      }
+    },
+    {
+      "id": "garden-lemons",
+      "category": "trees",
+      "name": "レモン（園芸交配品種群）",
+      "scientificName": "Citrus × limon (garden cultivars)",
+      "aliases": [
+        "檸檬",
+        "れもん",
+        "レモンの木",
+        "園芸品種",
+        "交配品種"
+      ],
+      "taxonRank": "horticultural-group",
+      "originKind": "unresolved",
+      "nativeAreas": [],
+      "regionCodes": [],
+      "sourceUrl": "https://www.rhs.org.uk/plants/91243/citrus-limon-f/details",
+      "checkedAt": "2026-10-06",
+      "note": "Kewは人工交配に由来する栽培植物と扱います。移入先を野生の原産地として表示せず、園芸品種群として掲載。 単一の原産地域を断定せず、地図には原産地域の線を表示しません。",
+      "reference": {
+        "stars": 2,
+        "reason": "RHSがCitrus × limonとして扱う園芸レモンです。交配に由来する園芸品種を単一の野生種の原産気候で説明できないため、品種別の栽培条件を優先します。",
+        "sourceUrl": "https://www.rhs.org.uk/plants/91243/citrus-limon-f/details",
+        "basis": "cultivation"
+      }
     }
   ],
   "outlineFiles": [
@@ -40820,6 +40901,7 @@
     "plant-outlines-4.json",
     "plant-outlines-5.json",
     "plant-outlines-6.json",
-    "plant-outlines-7.json"
+    "plant-outlines-7.json",
+    "plant-outlines-8.json"
   ]
 }

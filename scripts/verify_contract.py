@@ -410,7 +410,7 @@ def verify_plant_catalog(app: str) -> None:
     require(catalog['schema'] == outlines['schema'] == 1, 'plant schema mismatch')
     require(catalog['regionSource']['sha256'] == outlines['sourceSha256'], 'plant boundary source mismatch')
     require(catalog['ratingMethod']['kind'] == 'editorial-provisional', 'rating method missing')
-    expected = {'tropical':159, 'vegetables':75, 'annuals':69, 'perennials':143, 'bulbs':114, 'trees':117,
+    expected = {'tropical':159, 'vegetables':76, 'annuals':69, 'perennials':143, 'bulbs':114, 'trees':116,
                 'australian':70, 'succulents':147, 'caudex':62, 'tillandsia':44}
     require(catalog['checkedAt'] == '2026-10-06', 'catalog update date missing')
     require(len(plants) == 1000 and len({p['id'] for p in plants}) == 1000, 'plant count or duplicate ID')
@@ -418,7 +418,7 @@ def verify_plant_catalog(app: str) -> None:
     require({c:sum(p['category'] == c for p in plants) for c in expected} == expected, 'genre count mismatch')
     require(len({p['scientificName'] for p in plants}) == 1000, 'duplicate accepted taxa or garden groups')
     require(all(p['checkedAt'] == '2026-10-06' for p in plants[261:]), 'new source check date missing')
-    require(sum(p['taxonRank'] == 'horticultural-group' for p in plants) == 15, 'familiar garden groups missing')
+    require(sum(p['taxonRank'] == 'horticultural-group' for p in plants) == 17, 'familiar garden groups missing')
     for plant in plants:
         require(plant['taxonRank'] in ('species','variety','subspecies','cultivar','horticultural-group'), 'invalid taxon rank')
         require(plant['originKind'] in ('native','cultigen','unresolved'), 'invalid origin kind')
@@ -542,7 +542,7 @@ def verify_plant_catalog(app: str) -> None:
             'Tillandsia research must refer to original species')
     select_body = re.search(r'^  function selectPlant\([\s\S]*?^  }', app, re.M).group(0)
     require('setView(' not in select_body and 'focusPlantOrigin(' not in select_body, 'plant selection must preserve view')
-    print('PLANT_CATALOG_OK 1000 entries, 10 genres, 115 bulb choices, 15 garden groups, reference reasons, outlines')
+    print('PLANT_CATALOG_OK 1000 entries, 10 genres, 115 bulb choices, 17 garden groups, reference reasons, outlines')
 
 
 def main() -> None:
@@ -575,7 +575,7 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261006-catalog-1000\" defer></script>" in index, "versioned local deferred script missing")
+    require("<script src=\"./app.js?v=20261006-catalog-1000-fruits\" defer></script>" in index, "versioned local deferred script missing")
     require('href="./styles.css?v=20261005-taller-overview"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
