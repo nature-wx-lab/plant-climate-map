@@ -1034,10 +1034,15 @@
     return "★".repeat(plant.reference.stars) + "☆".repeat(5 - plant.reference.stars);
   }
 
+  function plantMatchesCategory(plant, category) {
+    return category === "all" || plant.category === category
+      || (plant.additionalCategories || []).includes(category);
+  }
+
   function renderPlantResults() {
     const query = normalizePlantSearch(elements.plantSearch.value);
     const category = elements.plantCategory.value;
-    const plants = state.plants.filter((plant) => (category === "all" || plant.category === category)
+    const plants = state.plants.filter((plant) => plantMatchesCategory(plant, category)
       && (!query || normalizePlantSearch([plant.name, plant.scientificName, ...plant.aliases].join(" ")).includes(query)));
     const fragment = document.createDocumentFragment();
     for (const plant of plants) {
@@ -1134,16 +1139,28 @@
 
   async function loadPlantCatalog() {
     try {
-      const [catalog, outlines] = await Promise.all(["./data/plants.json", "./data/plant-outlines.json"].map(async (url) => {
+      const [catalog, ...outlineSources] = await Promise.all([
+        "./data/plants.json?v=20261006-bulbs", "./data/plant-outlines.json?v=20261006-bulbs",
+        "./data/plant-outlines-bulbs.json?v=20261006-bulbs",
+      ].map(async (url) => {
         const response = await fetch(url, { credentials: "same-origin", referrerPolicy: "no-referrer" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       }));
-      if (catalog.schema !== 1 || outlines.schema !== 1 || !Array.isArray(catalog.plants)
-          || !Array.isArray(catalog.categories) || !outlines.outlines || !outlines.plantKeys
-          || outlines.sourceSha256 !== catalog.regionSource.sha256) throw new Error("植物データ形式が不正です");
+      if (catalog.schema !== 1 || !Array.isArray(catalog.plants) || !Array.isArray(catalog.categories)
+          || outlineSources.some((source) => source.schema !== 1 || !source.outlines || !source.plantKeys
+            || source.sourceSha256 !== catalog.regionSource?.sha256)) throw new Error("植物データ形式が不正です");
+      const outlines = {
+        plantKeys: Object.assign({}, ...outlineSources.map((source) => source.plantKeys)),
+        outlines: Object.assign({}, ...outlineSources.map((source) => source.outlines)),
+      };
+      const categoryIds = new Set(catalog.categories.map((category) => category.id));
       for (const plant of catalog.plants) {
         if (!plant.id || !plant.name || !Array.isArray(plant.aliases)
+            || !categoryIds.has(plant.category)
+            || (plant.additionalCategories !== undefined && (!Array.isArray(plant.additionalCategories)
+              || plant.additionalCategories.some((category) => !categoryIds.has(category) || category === plant.category)
+              || new Set(plant.additionalCategories).size !== plant.additionalCategories.length))
             || !Number.isInteger(plant.reference?.stars) || plant.reference.stars < 1 || plant.reference.stars > 5
             || !plant.reference.reason || !/^https:\/\//.test(plant.sourceUrl) || !/^https:\/\//.test(plant.reference.sourceUrl)
             || (plant.regionCodes.length && !outlines.outlines[outlines.plantKeys[plant.id]])) throw new Error("植物の分布・参考度が不足しています");
@@ -1154,10 +1171,10 @@
       for (const category of catalog.categories) {
         const option = document.createElement("option");
         option.value = category.id;
-        option.textContent = `${category.label}（${catalog.plants.filter((plant) => plant.category === category.id).length}）`;
+        option.textContent = `${category.label}（${catalog.plants.filter((plant) => plantMatchesCategory(plant, category.id)).length}）`;
         elements.plantCategory.append(option);
       }
-      elements.plantCatalogCount.textContent = `${catalog.plants.length}件 / 9ジャンル`;
+      elements.plantCatalogCount.textContent = `${catalog.plants.length}件 / ${catalog.categories.length}ジャンル`;
       elements.plantCategory.disabled = false;
       elements.plantSearch.disabled = false;
       renderPlantResults();

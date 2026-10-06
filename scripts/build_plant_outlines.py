@@ -34,13 +34,16 @@ def build(source_path: Path) -> None:
                for f in features}
     outlines = {}
     plant_keys = {}
-    for plant in catalog['plants']:
+    bulb_outlines = {}
+    bulb_keys = {}
+    for plant in sorted(catalog['plants'], key=lambda plant: plant['category'] == 'bulbs'):
         codes = plant['regionCodes']
         if not codes:
             continue
         key = '-'.join(codes)
-        plant_keys[plant['id']] = key
-        if key in outlines:
+        is_bulb = plant['category'] == 'bulbs'
+        (bulb_keys if is_bulb else plant_keys)[plant['id']] = key
+        if key in outlines or key in bulb_outlines:
             continue
         merged = unary_union([regions[code] for code in codes])
         # Exterior rings only: connected regions share one outer line; islands stay separate.
@@ -52,12 +55,15 @@ def build(source_path: Path) -> None:
                 rings.append(ring)
         if not rings:
             raise ValueError(f"No outline for {plant['id']}")
-        outlines[key] = {'rings': rings}
-    result = {'schema': 1, 'sourceSha256': digest, 'simplificationDegrees': TOLERANCE,
-              'plantKeys': plant_keys, 'outlines': outlines}
-    output = ROOT / 'data/plant-outlines.json'
-    output.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')) + '\n')
-    print(f'PLANT_OUTLINES_OK plants={len(plant_keys)} geometries={len(outlines)} bytes={output.stat().st_size}')
+        (bulb_outlines if is_bulb else outlines)[key] = {'rings': rings}
+    # Keep each public JSON within the file limit without changing drawing precision.
+    for filename, keys, shapes in [('plant-outlines.json', plant_keys, outlines),
+                                   ('plant-outlines-bulbs.json', bulb_keys, bulb_outlines)]:
+        result = {'schema': 1, 'sourceSha256': digest, 'simplificationDegrees': TOLERANCE,
+                  'plantKeys': keys, 'outlines': shapes}
+        output = ROOT / 'data' / filename
+        output.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')) + '\n')
+        print(f'PLANT_OUTLINES_OK file={filename} plants={len(keys)} geometries={len(shapes)} bytes={output.stat().st_size}')
 
 
 if __name__ == '__main__':

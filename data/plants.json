@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checkedAt": "2026-09-26",
+  "checkedAt": "2026-10-06",
   "categories": [
     {
       "id": "tropical",
@@ -17,6 +17,10 @@
     {
       "id": "perennials",
       "label": "草花（宿根草）"
+    },
+    {
+      "id": "bulbs",
+      "label": "草花（球根植物）"
     },
     {
       "id": "trees",
@@ -3012,7 +3016,10 @@
         "reason": "自生地の湿った草地と、夏の暑さ・湿度への耐性が手がかりになります。この種は適度な水分を好み、リアトリス全般を乾燥地の花とは扱いません。",
         "sourceUrl": "https://plants.ces.ncsu.edu/plants/liatris-spicata/",
         "basis": "cultivation"
-      }
+      },
+      "additionalCategories": [
+        "bulbs"
+      ]
     },
     {
       "id": "physostegia-virginiana",
@@ -9822,6 +9829,879 @@
         "reason": "園芸品種名として登録しています。対応する原種が未特定なので、原産地の気候との比較はできません。",
         "sourceUrl": "https://www.rhs.org.uk/plants/505239/philodendron-birkin-v/details",
         "basis": "unresolved"
+      }
+    },
+    {
+      "id": "tulipa-gesneriana",
+      "category": "bulbs",
+      "name": "チューリップ（栽培種）",
+      "scientificName": "Tulipa gesneriana",
+      "aliases": [
+        "チューリップ",
+        "ゲスネリアナ"
+      ],
+      "taxonRank": "species",
+      "originKind": "cultigen",
+      "nativeAreas": [
+        "Türkiye"
+      ],
+      "regionCodes": [
+        "TUR"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:542923-1",
+      "checkedAt": "2026-10-06",
+      "note": "Kewではトルコ由来の栽培化した種です。線は成立地域を示し、流通する交雑品種全体の野生分布や必要な低温量を示しません。",
+      "reference": {
+        "stars": 3,
+        "reason": "トルコの季節ごとの気温・降水を比較する出発点に。栽培化した種であり、品種ごとの開花条件や球根の低温処理は別に確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:542923-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "narcissus-pseudonarcissus",
+      "category": "bulbs",
+      "name": "ラッパズイセン（原種）",
+      "scientificName": "Narcissus pseudonarcissus",
+      "aliases": [
+        "ラッパスイセン",
+        "スイセン",
+        "水仙"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Belgium",
+        "France",
+        "Germany",
+        "Great Britain",
+        "Netherlands",
+        "Portugal",
+        "Spain",
+        "Switzerland"
+      ],
+      "regionCodes": [
+        "BGM",
+        "FRA",
+        "GER",
+        "GRB",
+        "NET",
+        "POR",
+        "SPA",
+        "SWI"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:66177-1",
+      "checkedAt": "2026-10-06",
+      "note": "Narcissus pseudonarcissusという種の地域です。すべてのスイセンや園芸品種の分布をまとめたものではありません。",
+      "reference": {
+        "stars": 3,
+        "reason": "西ヨーロッパの冬と春の気温・雨を日本と比べる手がかりに。ラッパズイセンの園芸品種ごとの耐性・開花条件は未評価です。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:66177-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "narcissus-tazetta",
+      "category": "bulbs",
+      "name": "スイセン（タゼッタ系・種全体）",
+      "scientificName": "Narcissus tazetta",
+      "aliases": [
+        "ニホンズイセン",
+        "日本水仙",
+        "フサザキスイセン",
+        "タゼッタ"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Afghanistan",
+        "Albania",
+        "Algeria",
+        "Baleares",
+        "Canary Is.",
+        "China Southeast",
+        "Corse",
+        "Cyprus",
+        "East Aegean Is.",
+        "Egypt",
+        "France",
+        "Greece",
+        "Iran",
+        "Iraq",
+        "Italy",
+        "Japan",
+        "Kriti",
+        "Lebanon-Syria",
+        "Libya",
+        "Morocco",
+        "NW. Balkan Pen.",
+        "Pakistan",
+        "Palestine",
+        "Sardegna",
+        "Sicilia",
+        "Sinai",
+        "Spain",
+        "Tunisia",
+        "Turkmenistan",
+        "Türkiye",
+        "Uzbekistan"
+      ],
+      "regionCodes": [
+        "AFG",
+        "ALB",
+        "ALG",
+        "BAL",
+        "CHS",
+        "CNY",
+        "COR",
+        "CYP",
+        "EAI",
+        "EGY",
+        "FRA",
+        "GRC",
+        "IRN",
+        "IRQ",
+        "ITA",
+        "JAP",
+        "KRI",
+        "LBS",
+        "LBY",
+        "MOR",
+        "PAK",
+        "PAL",
+        "SAR",
+        "SIC",
+        "SIN",
+        "SPA",
+        "TKM",
+        "TUN",
+        "TUR",
+        "UZB",
+        "YUG"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/66240-1",
+      "checkedAt": "2026-10-06",
+      "note": "ニホンズイセン等を探す入口として、Narcissus tazettaの種単位の地域を表示します。変種・系統ごとの地域は分けておらず、各地の集団の由来まで示しません。",
+      "reference": {
+        "stars": 3,
+        "reason": "地中海から東アジアまでの冬・春の気候差を比較できます。掲載域が広く、地域・系統・園芸品種を分けて解釈する必要があります。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/66240-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "hyacinthus-orientalis",
+      "category": "bulbs",
+      "name": "ヒヤシンス（原種）",
+      "scientificName": "Hyacinthus orientalis",
+      "aliases": [
+        "ヒアシンス",
+        "ヒヤシンス"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Iraq",
+        "Lebanon-Syria",
+        "Palestine",
+        "Türkiye"
+      ],
+      "regionCodes": [
+        "IRQ",
+        "LBS",
+        "PAL",
+        "TUR"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:536789-1",
+      "checkedAt": "2026-10-06",
+      "note": "Hyacinthus orientalisの種単位の地域です。花色や花序が改良された園芸品種、水栽培時の管理条件とは分けて見ます。",
+      "reference": {
+        "stars": 3,
+        "reason": "西アジアの季節ごとの気温と降水を比べる手がかりに。園芸品種の低温処理や鉢・水栽培の条件を地図から決めることはできません。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:536789-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "muscari-armeniacum",
+      "category": "bulbs",
+      "name": "ムスカリ（アルメニアカム）",
+      "scientificName": "Muscari armeniacum",
+      "aliases": [
+        "ムスカリ",
+        "グレープヒヤシンス"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Bulgaria",
+        "Greece",
+        "North Caucasus",
+        "NW. Balkan Pen.",
+        "Transcaucasus",
+        "Türkiye",
+        "Türkiye-in-Europe"
+      ],
+      "regionCodes": [
+        "BUL",
+        "GRC",
+        "NCS",
+        "TCS",
+        "TUE",
+        "TUR",
+        "YUG"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:77306704-1",
+      "checkedAt": "2026-10-06",
+      "note": "よく流通するムスカリの一種Muscari armeniacumを表示します。ほかのムスカリや園芸品種の地域を一括したものではありません。",
+      "reference": {
+        "stars": 3,
+        "reason": "南東ヨーロッパからコーカサスの季節差を日本と比べる手がかりに。原種の掲載地域を示し、品種ごとの耐性は未評価です。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:77306704-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "crocus-vernus",
+      "category": "bulbs",
+      "name": "クロッカス（春咲き・原種）",
+      "scientificName": "Crocus vernus",
+      "aliases": [
+        "クロッカス",
+        "春咲きクロッカス",
+        "ハナサフラン"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Austria",
+        "France",
+        "Germany",
+        "Italy",
+        "NW. Balkan Pen.",
+        "Switzerland"
+      ],
+      "regionCodes": [
+        "AUT",
+        "FRA",
+        "GER",
+        "ITA",
+        "SWI",
+        "YUG"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60461938-2",
+      "checkedAt": "2026-10-06",
+      "note": "春咲きクロッカスの一種Crocus vernusを表示します。アルプスなどの山地を含むため、国・地域の線は標高や実際の自生地点を示しません。",
+      "reference": {
+        "stars": 3,
+        "reason": "ヨーロッパ山地の周辺地域と日本の冬・春を比べる出発点に。標高差や積雪、園芸品種の違いは別に確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60461938-2",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "freesia-refracta",
+      "category": "bulbs",
+      "name": "フリージア（レフラクタ・原種）",
+      "scientificName": "Freesia refracta",
+      "aliases": [
+        "フリージア",
+        "フリージア・レフラクタ",
+        "アサギスイセン"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Cape Provinces"
+      ],
+      "regionCodes": [
+        "CPP"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:437030-1",
+      "checkedAt": "2026-10-06",
+      "note": "Freesia refractaという原種を表示します。交雑・改良されたフリージア全体の分布ではありません。ケープ地方の線は実際の自生域より広い概略です。",
+      "reference": {
+        "stars": 4,
+        "reason": "冬に雨が降り、夏は乾く地域の生育・休眠の季節を比較する手がかりに。SANBIの栽培解説を参照し、園芸品種や排水条件は別に確認します。",
+        "sourceUrl": "https://pza.sanbi.org/freesia-refracta",
+        "basis": "cultivation"
+      }
+    },
+    {
+      "id": "ranunculus-asiaticus",
+      "category": "bulbs",
+      "name": "ラナンキュラス（アジアティクス）",
+      "scientificName": "Ranunculus asiaticus",
+      "aliases": [
+        "ラナンキュラス",
+        "ハナキンポウゲ"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Cyprus",
+        "East Aegean Is.",
+        "Egypt",
+        "Greece",
+        "Iran",
+        "Iraq",
+        "Kriti",
+        "Lebanon-Syria",
+        "Libya",
+        "Palestine",
+        "Sinai",
+        "Türkiye"
+      ],
+      "regionCodes": [
+        "CYP",
+        "EAI",
+        "EGY",
+        "GRC",
+        "IRN",
+        "IRQ",
+        "KRI",
+        "LBS",
+        "LBY",
+        "PAL",
+        "SIN",
+        "TUR"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:712245-1",
+      "checkedAt": "2026-10-06",
+      "note": "一般的なラナンキュラスにつながるRanunculus asiaticusの地域です。八重咲き等の園芸品種の耐性・開花特性を直接示しません。",
+      "reference": {
+        "stars": 3,
+        "reason": "東地中海から西アジアの季節ごとの気温・雨を比べる出発点に。園芸改良や球根の処理、鉢の過湿は別に確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:712245-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "anemone-coronaria",
+      "category": "bulbs",
+      "name": "アネモネ（コロナリア）",
+      "scientificName": "Anemone coronaria",
+      "aliases": [
+        "アネモネ",
+        "ボタンイチゲ"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Albania",
+        "Algeria",
+        "Baleares",
+        "Bulgaria",
+        "Corse",
+        "Cyprus",
+        "East Aegean Is.",
+        "Egypt",
+        "France",
+        "Greece",
+        "Iran",
+        "Iraq",
+        "Italy",
+        "Kriti",
+        "Lebanon-Syria",
+        "Libya",
+        "NW. Balkan Pen.",
+        "Palestine",
+        "Portugal",
+        "Sardegna",
+        "Sicilia",
+        "Sinai",
+        "Spain",
+        "Transcaucasus",
+        "Tunisia",
+        "Türkiye",
+        "Türkiye-in-Europe"
+      ],
+      "regionCodes": [
+        "ALB",
+        "ALG",
+        "BAL",
+        "BUL",
+        "COR",
+        "CYP",
+        "EAI",
+        "EGY",
+        "FRA",
+        "GRC",
+        "IRN",
+        "IRQ",
+        "ITA",
+        "KRI",
+        "LBS",
+        "LBY",
+        "PAL",
+        "POR",
+        "SAR",
+        "SIC",
+        "SIN",
+        "SPA",
+        "TCS",
+        "TUE",
+        "TUN",
+        "TUR",
+        "YUG"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:708314-1",
+      "checkedAt": "2026-10-06",
+      "note": "花壇でよく知られるAnemone coronariaという種の地域です。シュウメイギク等の別種や全園芸品種の地域を示すものではありません。",
+      "reference": {
+        "stars": 3,
+        "reason": "地中海周辺の季節ごとの気温・降水を日本と比べられます。掲載地域が広く、品種や自生地点の違いは別に確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:708314-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "cyclamen-persicum",
+      "category": "bulbs",
+      "name": "シクラメン（ペルシカム・原種）",
+      "scientificName": "Cyclamen persicum",
+      "aliases": [
+        "シクラメン",
+        "ガーデンシクラメン",
+        "ペルシカム"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Algeria",
+        "Cyprus",
+        "East Aegean Is.",
+        "Greece",
+        "Kriti",
+        "Lebanon-Syria",
+        "Palestine",
+        "Tunisia",
+        "Türkiye"
+      ],
+      "regionCodes": [
+        "ALG",
+        "CYP",
+        "EAI",
+        "GRC",
+        "KRI",
+        "LBS",
+        "PAL",
+        "TUN",
+        "TUR"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:700765-1",
+      "checkedAt": "2026-10-06",
+      "note": "鉢物やガーデンシクラメンの基になったCyclamen persicumという種を表示します。園芸品種の耐寒性と原種の地域は区別します。",
+      "reference": {
+        "stars": 4,
+        "reason": "暑く乾く夏の休眠と、涼しく湿る冬・春の生育を比較する手がかりに。大学の栽培解説を参照し、ガーデン品種の耐寒性や夏越し方法は別に確認します。",
+        "sourceUrl": "https://plants.ces.ncsu.edu/plants/cyclamen-persicum/",
+        "basis": "cultivation"
+      }
+    },
+    {
+      "id": "dahlia-pinnata",
+      "category": "bulbs",
+      "name": "ダリア（栽培種）",
+      "scientificName": "Dahlia pinnata",
+      "aliases": [
+        "ダリア",
+        "テンジクボタン",
+        "天竺牡丹"
+      ],
+      "taxonRank": "species",
+      "originKind": "cultigen",
+      "nativeAreas": [
+        "Mexico Central",
+        "Mexico Gulf",
+        "Mexico Northeast",
+        "Mexico Southwest"
+      ],
+      "regionCodes": [
+        "MXC",
+        "MXE",
+        "MXG",
+        "MXS"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:30027297-2",
+      "checkedAt": "2026-10-06",
+      "note": "Kewではメキシコ由来の栽培化した種です。線は成立地域を示し、すべての交雑ダリアの野生分布ではありません。標高と品種の違いは地図の線に含まれません。",
+      "reference": {
+        "stars": 3,
+        "reason": "メキシコの地域ごとの気温・雨の季節差を比べる出発点に。栽培化・園芸改良と標高の影響があり、球根の越冬や栽培可否をこの線だけで判断しません。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:30027297-2",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "gladiolus-dalenii",
+      "category": "bulbs",
+      "name": "グラジオラス（ダレニー・原種）",
+      "scientificName": "Gladiolus dalenii",
+      "aliases": [
+        "グラジオラス",
+        "ダレニー"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Angola",
+        "Benin",
+        "Burkina",
+        "Burundi",
+        "Cameroon",
+        "Cape Provinces",
+        "Central African Republic",
+        "Chad",
+        "Congo",
+        "DR Congo",
+        "Eritrea",
+        "Eswatini",
+        "Ethiopia",
+        "Free State",
+        "Ghana",
+        "Guinea",
+        "Guinea-Bissau",
+        "Ivory Coast",
+        "Kenya",
+        "KwaZulu-Natal",
+        "Lesotho",
+        "Madagascar",
+        "Malawi",
+        "Mali",
+        "Mozambique",
+        "Nigeria",
+        "Northern Provinces",
+        "Rwanda",
+        "Saudi Arabia",
+        "Senegal",
+        "Sierra Leone",
+        "Sudan-South Sudan",
+        "Tanzania",
+        "Togo",
+        "Uganda",
+        "Yemen",
+        "Zambia",
+        "Zimbabwe"
+      ],
+      "regionCodes": [
+        "ANG",
+        "BEN",
+        "BKN",
+        "BUR",
+        "CAF",
+        "CHA",
+        "CMN",
+        "CON",
+        "CPP",
+        "ERI",
+        "ETH",
+        "GHA",
+        "GNB",
+        "GUI",
+        "IVO",
+        "KEN",
+        "LES",
+        "MDG",
+        "MLI",
+        "MLW",
+        "MOZ",
+        "NAT",
+        "NGA",
+        "OFS",
+        "RWA",
+        "SAU",
+        "SEN",
+        "SIE",
+        "SUD",
+        "SWZ",
+        "TAN",
+        "TOG",
+        "TVL",
+        "UGA",
+        "YEM",
+        "ZAI",
+        "ZAM",
+        "ZIM"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:437402-1",
+      "checkedAt": "2026-10-06",
+      "note": "Gladiolus daleniiという原種を表示します。一般的な交雑グラジオラス全体の地域ではなく、アフリカ等の広い掲載域には多様な気候・標高が含まれます。",
+      "reference": {
+        "stars": 3,
+        "reason": "アフリカの地域ごとの雨季・乾季や気温差を比べる出発点に。分布が広いため代表的な自生地点と品種を確認し、一つの地域の気候を全株へ当てはめません。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:437402-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "hippeastrum-vittatum",
+      "category": "bulbs",
+      "name": "アマリリス（ヴィッタツム・原種）",
+      "scientificName": "Hippeastrum vittatum",
+      "aliases": [
+        "アマリリス",
+        "ヒッペアストルム",
+        "ヴィッタツム"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Argentina Northeast",
+        "Bolivia",
+        "Brazil South"
+      ],
+      "regionCodes": [
+        "AGE",
+        "BOL",
+        "BZS"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:65185-1",
+      "checkedAt": "2026-10-06",
+      "note": "Hippeastrum vittatumという原種を表示します。流通する交雑アマリリス全体の原産地域や開花調整の条件を示すものではありません。",
+      "reference": {
+        "stars": 3,
+        "reason": "南米の季節ごとの気温・雨を日本と比較する手がかりに。原種の分布を出発点とし、交雑品種の耐性・休眠管理・開花調整は別に確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:65185-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "zantedeschia-aethiopica",
+      "category": "bulbs",
+      "name": "カラー（白花・オランダカイウ）",
+      "scientificName": "Zantedeschia aethiopica",
+      "aliases": [
+        "カラー",
+        "オランダカイウ",
+        "海芋"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Cape Provinces",
+        "Eswatini",
+        "Free State",
+        "KwaZulu-Natal",
+        "Lesotho",
+        "Northern Provinces"
+      ],
+      "regionCodes": [
+        "CPP",
+        "LES",
+        "NAT",
+        "OFS",
+        "SWZ",
+        "TVL"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:89403-1",
+      "checkedAt": "2026-10-06",
+      "note": "白花のZantedeschia aethiopicaという種です。色花の交雑カラー全体の地域ではありません。月降水量から生育地の水位や鉢の水分条件は判断できません。",
+      "reference": {
+        "stars": 3,
+        "reason": "南部アフリカの地域ごとの気温と雨の季節差を比較する出発点に。生育地の水分・排水条件や色花の園芸品種との違いは別に確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:89403-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "lycoris-radiata",
+      "category": "bulbs",
+      "name": "ヒガンバナ（種全体）",
+      "scientificName": "Lycoris radiata",
+      "aliases": [
+        "ヒガンバナ",
+        "彼岸花",
+        "マンジュシャゲ",
+        "リコリス"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "China North-Central",
+        "China South-Central",
+        "China Southeast",
+        "Japan",
+        "Korea",
+        "Nepal"
+      ],
+      "regionCodes": [
+        "CHC",
+        "CHN",
+        "CHS",
+        "JAP",
+        "KOR",
+        "NEP"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60455959-2",
+      "checkedAt": "2026-10-06",
+      "note": "Lycoris radiataの種全体についてKewが掲載する地域です。日本の各集団の由来や系統の性質、ほかのリコリスや交雑品種まで示すものではありません。",
+      "reference": {
+        "stars": 3,
+        "reason": "東アジアの季節ごとの気温・降水を比べる手がかりに。種全体の地域であり、各地の系統や園芸品種の違いは別に確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60455959-2",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "nerine-bowdenii",
+      "category": "bulbs",
+      "name": "ネリネ（ボーデニー）",
+      "scientificName": "Nerine bowdenii",
+      "aliases": [
+        "ネリネ",
+        "ダイヤモンドリリー",
+        "ボーデニー"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Cape Provinces",
+        "Free State",
+        "KwaZulu-Natal"
+      ],
+      "regionCodes": [
+        "CPP",
+        "NAT",
+        "OFS"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:66292-1",
+      "checkedAt": "2026-10-06",
+      "note": "Nerine bowdeniiという種です。ダイヤモンドリリーという流通名で扱う他種・交雑品種を一括したものではありません。ケープ地方の線は実際の自生域より広い概略です。",
+      "reference": {
+        "stars": 4,
+        "reason": "夏の雨と乾いた冬の休眠を比較する手がかりに。SANBIの栽培解説を参照し、冬生育型の別種や交雑品種には同じ季節の管理を当てはめません。",
+        "sourceUrl": "https://pza.sanbi.org/nerine-bowdenii",
+        "basis": "cultivation"
+      }
+    },
+    {
+      "id": "allium-giganteum",
+      "category": "bulbs",
+      "name": "アリウム（ギガンチウム）",
+      "scientificName": "Allium giganteum",
+      "aliases": [
+        "アリウム",
+        "ギガンチウム",
+        "ギガンテウム",
+        "観賞用アリウム"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Afghanistan",
+        "Iran",
+        "Tadzhikistan",
+        "Turkmenistan",
+        "Uzbekistan"
+      ],
+      "regionCodes": [
+        "AFG",
+        "IRN",
+        "TKM",
+        "TZK",
+        "UZB"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/528087-1",
+      "checkedAt": "2026-10-06",
+      "note": "大きな球状花序で知られるAllium giganteumという種です。タマネギや、ほかの観賞用アリウム・交雑品種をまとめた地域ではありません。",
+      "reference": {
+        "stars": 3,
+        "reason": "イランから中央アジアの気温・雨の季節差を日本と比べる手がかりに。標高差や園芸品種の耐性・休眠条件は別に確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/528087-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "agapanthus-praecox",
+      "category": "bulbs",
+      "name": "アガパンサス（プラエコクス）",
+      "scientificName": "Agapanthus praecox",
+      "aliases": [
+        "アガパンサス",
+        "ムラサキクンシラン",
+        "プラエコクス"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Cape Provinces",
+        "KwaZulu-Natal"
+      ],
+      "regionCodes": [
+        "CPP",
+        "NAT"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:527283-1",
+      "checkedAt": "2026-10-06",
+      "note": "根茎を持つ多年草を含む広い園芸上の球根植物として掲載します。Agapanthus praecoxという種の地域であり、アフリカヌス等の別種や常緑・落葉の園芸系統を一括したものではありません。",
+      "reference": {
+        "stars": 3,
+        "reason": "南アフリカの地域ごとの気温・雨を比較する出発点に。種類・系統で生育の季節や耐性が異なるため、栽培する株と対応する種を確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:527283-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "lilium-longiflorum",
+      "category": "bulbs",
+      "name": "テッポウユリ（原種）",
+      "scientificName": "Lilium longiflorum",
+      "aliases": [
+        "テッポウユリ",
+        "鉄砲百合",
+        "ユリ"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Japan",
+        "Nansei-shoto",
+        "Philippines",
+        "Taiwan"
+      ],
+      "regionCodes": [
+        "JAP",
+        "NNS",
+        "PHI",
+        "TAI"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:537642-1",
+      "checkedAt": "2026-10-06",
+      "note": "種全体の掲載地域です。Kewの概要は屋久島・種子島からフィリピン北部までを示しますが、地図は地域単位のため日本全域での自生や標高を示しません。園芸交雑ユリとは分けます。",
+      "reference": {
+        "stars": 3,
+        "reason": "日本南部の島々から台湾・フィリピンの周辺気候を比べる手がかりに。実際の自生地点・標高や園芸品種の開花条件は別に確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:537642-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "lilium-auratum",
+      "category": "bulbs",
+      "name": "ヤマユリ（原種）",
+      "scientificName": "Lilium auratum",
+      "aliases": [
+        "ヤマユリ",
+        "山百合",
+        "ユリ"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Japan"
+      ],
+      "regionCodes": [
+        "JAP"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:537467-1",
+      "checkedAt": "2026-10-06",
+      "note": "Lilium auratumという種についてKewが掲載する日本の概略線です。全国での自生や標高・林内環境を示す線ではなく、交雑ユリの品種別分布とも異なります。",
+      "reference": {
+        "stars": 3,
+        "reason": "日本の地域ごとの季節差を調べる出発点に。原産国が日本でも全域に自生する意味ではなく、自生地点・標高・周辺環境を確認して比較します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:537467-1",
+        "basis": "distribution"
       }
     }
   ]

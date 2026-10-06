@@ -32,6 +32,7 @@ DEPLOY_FILES = (
     "data/world-50m.geojson",
     "data/plants.json",
     "data/plant-outlines.json",
+    "data/plant-outlines-bulbs.json",
     "index.html",
     "robots.txt",
     "sitemap.xml",
