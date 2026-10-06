@@ -407,13 +407,13 @@ def verify_plant_catalog(app: str) -> None:
     require(catalog['schema'] == outlines['schema'] == 1, 'plant schema mismatch')
     require(catalog['regionSource']['sha256'] == outlines['sourceSha256'], 'plant boundary source mismatch')
     require(catalog['ratingMethod']['kind'] == 'editorial-provisional', 'rating method missing')
-    expected = {'tropical':40, 'vegetables':25, 'annuals':20, 'perennials':20, 'bulbs':20, 'trees':20,
+    expected = {'tropical':40, 'vegetables':25, 'annuals':20, 'perennials':20, 'bulbs':28, 'trees':20,
                 'australian':33, 'succulents':25, 'caudex':28, 'tillandsia':22}
     require(catalog['checkedAt'] == '2026-10-06', 'catalog update date missing')
-    require(len(plants) == 253 and len({p['id'] for p in plants}) == 253, 'plant count or duplicate ID')
+    require(len(plants) == 261 and len({p['id'] for p in plants}) == 261, 'plant count or duplicate ID')
     require({c['id'] for c in catalog['categories']} == set(expected), 'plant categories mismatch')
     require({c:sum(p['category'] == c for p in plants) for c in expected} == expected, 'genre count mismatch')
-    require(len({p['scientificName'] for p in plants}) == 253, 'duplicate accepted taxa')
+    require(len({p['scientificName'] for p in plants}) == 261, 'duplicate accepted taxa')
     for plant in plants:
         require(plant['taxonRank'] in ('species','variety','subspecies','cultivar'), 'invalid taxon rank')
         require(plant['originKind'] in ('native','cultigen','unresolved'), 'invalid origin kind')
@@ -442,6 +442,9 @@ def verify_plant_catalog(app: str) -> None:
              'Hippeastrum vittatum', 'Zantedeschia aethiopica', 'Lycoris radiata',
              'Nerine bowdenii', 'Allium giganteum', 'Agapanthus praecox',
              'Lilium longiflorum', 'Lilium auratum'}
+    species_tulips = {'Tulipa clusiana', 'Tulipa humilis', 'Tulipa tarda', 'Tulipa turkestanica',
+                     'Tulipa saxatilis', 'Tulipa linifolia', 'Tulipa sylvestris', 'Tulipa kaufmanniana'}
+    bulbs |= species_tulips
     require({p['scientificName'] for p in plants if p['category'] == 'bulbs'} == bulbs,
             'selected bulb species missing')
     require(set(bulb_outlines['plantKeys']) == {p['id'] for p in plants if p['category'] == 'bulbs'},
@@ -450,12 +453,18 @@ def verify_plant_catalog(app: str) -> None:
             'bulb genre label mismatch')
     require(by_id['liatris-spicata']['category'] == 'perennials'
             and by_id['liatris-spicata'].get('additionalCategories') == ['bulbs']
-            and sum(p['category'] == 'bulbs' or 'bulbs' in p.get('additionalCategories', []) for p in plants) == 21,
+            and sum(p['category'] == 'bulbs' or 'bulbs' in p.get('additionalCategories', []) for p in plants) == 29,
             'shared perennial/bulb membership missing')
     require(all(p['note'] and p['reference']['reason'] for p in plants if p['category'] == 'bulbs'),
             'bulb species or cultivar explanation missing')
     require(all(by_id[pid]['originKind'] == 'cultigen' for pid in ('tulipa-gesneriana', 'dahlia-pinnata')),
             'cultivated bulb origin must be distinguished from native range')
+    require(all(p['originKind'] == 'native' and p['taxonRank'] == 'species'
+                and '原種チューリップ' in p['aliases'] for p in plants if p['scientificName'] in species_tulips),
+            'species tulips must retain native species scope and common search alias')
+    require('Tulipa bakeri' in by_id['tulipa-saxatilis']['aliases']
+            and 'Tulipa batalinii' in by_id['tulipa-linifolia']['aliases'],
+            'familiar tulip synonym search missing')
     require(set(by_id['dracaena-trifasciata']['nativeAreas']) == {'Cameroon','Central African Republic','Congo','DR Congo','Equatorial Guinea','Gabon','Nigeria','Tanzania'}, 'Sansevieria native range changed')
     require(by_id['solanum-tuberosum']['reference']['stars'] == 1 and '長日' in by_id['solanum-tuberosum']['reference']['reason'], 'potato improvement note missing')
     require('フレンチマリーゴールド' in by_id['tagetes-erecta']['aliases'] and '別名' in by_id['tagetes-erecta']['note'], 'marigold synonym explanation missing')
@@ -526,7 +535,7 @@ def verify_plant_catalog(app: str) -> None:
             'Tillandsia research must refer to original species')
     select_body = re.search(r'^  function selectPlant\([\s\S]*?^  }', app, re.M).group(0)
     require('setView(' not in select_body and 'focusPlantOrigin(' not in select_body, 'plant selection must preserve view')
-    print('PLANT_CATALOG_OK 253 taxa, 10 genres, 21 bulb choices, reference reasons, outlines')
+    print('PLANT_CATALOG_OK 261 taxa, 10 genres, 29 bulb choices, 8 native tulip species, reference reasons, outlines')
 
 
 def main() -> None:
@@ -559,7 +568,7 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261006-bulbs\" defer></script>" in index, "versioned local deferred script missing")
+    require("<script src=\"./app.js?v=20261006-species-tulips\" defer></script>" in index, "versioned local deferred script missing")
     require('href="./styles.css?v=20261005-taller-overview"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")

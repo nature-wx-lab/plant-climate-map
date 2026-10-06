@@ -1140,8 +1140,8 @@
   async function loadPlantCatalog() {
     try {
       const [catalog, ...outlineSources] = await Promise.all([
-        "./data/plants.json?v=20261006-bulbs", "./data/plant-outlines.json?v=20261006-bulbs",
-        "./data/plant-outlines-bulbs.json?v=20261006-bulbs",
+        "./data/plants.json?v=20261006-species-tulips", "./data/plant-outlines.json?v=20261006-species-tulips",
+        "./data/plant-outlines-bulbs.json?v=20261006-species-tulips",
       ].map(async (url) => {
         const response = await fetch(url, { credentials: "same-origin", referrerPolicy: "no-referrer" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);

@@ -10703,6 +10703,345 @@
         "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:537467-1",
         "basis": "distribution"
       }
+    },
+    {
+      "id": "tulipa-clusiana",
+      "category": "bulbs",
+      "name": "クルシアナ（原種チューリップ）",
+      "scientificName": "Tulipa clusiana",
+      "aliases": [
+        "原種チューリップ",
+        "チューリップ",
+        "クルシアナ",
+        "クルシアーナ"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Afghanistan",
+        "Iran",
+        "Iraq",
+        "Pakistan",
+        "West Himalaya"
+      ],
+      "regionCodes": [
+        "AFG",
+        "IRN",
+        "IRQ",
+        "PAK",
+        "WHM"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:542880-1",
+      "checkedAt": "2026-10-06",
+      "note": "クルシアナという種全体の原産地域です。流通する選抜品種・交雑品種の花色や耐性を示すものではなく、産地ごとの標高・生育環境も別に確認します。",
+      "reference": {
+        "stars": 3,
+        "reason": "イラク北部から西ヒマラヤにかけて、冬と夏の気温差や月ごとの雨量を比較する出発点に。種の原産地域を示すもので、園芸品種別の耐性は未評価です。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:542880-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "tulipa-humilis",
+      "category": "bulbs",
+      "name": "フミリス（原種チューリップ）",
+      "scientificName": "Tulipa humilis",
+      "aliases": [
+        "原種チューリップ",
+        "チューリップ",
+        "フミリス",
+        "ヒュミリス",
+        "プルケラ",
+        "Tulipa humilis var. pulchella"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Afghanistan",
+        "Iran",
+        "Iraq",
+        "Lebanon-Syria",
+        "North Caucasus",
+        "Transcaucasus",
+        "Türkiye"
+      ],
+      "regionCodes": [
+        "AFG",
+        "IRN",
+        "IRQ",
+        "LBS",
+        "NCS",
+        "TCS",
+        "TUR"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:542952-1",
+      "checkedAt": "2026-10-06",
+      "note": "Tulipa humilisの種全体を表示し、プルケラ等の自然変種の地域は分けていません。流通品種の特性や山地の標高を地図の線だけで代表させません。",
+      "reference": {
+        "stars": 3,
+        "reason": "トルコからイラン・アフガニスタン周辺の季節ごとの気温・降水を比較する手がかりに。自然変種・産地・標高、園芸品種の違いは別に確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:542952-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "tulipa-tarda",
+      "category": "bulbs",
+      "name": "タルダ（原種チューリップ）",
+      "scientificName": "Tulipa tarda",
+      "aliases": [
+        "原種チューリップ",
+        "チューリップ",
+        "タルダ",
+        "ターダ",
+        "Tulipa urumiensis",
+        "ウルミエンシス"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Iran",
+        "Kazakhstan",
+        "Kirgizstan"
+      ],
+      "regionCodes": [
+        "IRN",
+        "KAZ",
+        "KGZ"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:543112-1",
+      "checkedAt": "2026-10-06",
+      "note": "タルダという種の原産地域です。Kewの現行分類ではTulipa urumiensisを別名として扱います。イランや中央アジアの地域全域での自生や山地の標高を示す線ではありません。",
+      "reference": {
+        "stars": 4,
+        "reason": "イラン北西部と中央アジアの季節差を比較する手がかりに。RHSは良い排水と過湿からの保護を勧めています。月降水量から用土の排水性や球根の水分条件は判断できません。",
+        "sourceUrl": "https://www.rhs.org.uk/plants/18549/tulipa-tarda-15/details",
+        "basis": "cultivation"
+      }
+    },
+    {
+      "id": "tulipa-turkestanica",
+      "category": "bulbs",
+      "name": "トルケスタニカ（原種チューリップ）",
+      "scientificName": "Tulipa turkestanica",
+      "aliases": [
+        "原種チューリップ",
+        "チューリップ",
+        "トルケスタニカ",
+        "ツルケスタニカ"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Kirgizstan",
+        "Tadzhikistan",
+        "Uzbekistan",
+        "Xinjiang"
+      ],
+      "regionCodes": [
+        "CHX",
+        "KGZ",
+        "TZK",
+        "UZB"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:543131-1",
+      "checkedAt": "2026-10-06",
+      "note": "中央アジアから新疆に分布するTulipa turkestanicaという種です。地域の概略線であり、国全域での自生や自生地点の標高・開花時期を示しません。",
+      "reference": {
+        "stars": 3,
+        "reason": "中央アジアから新疆の月ごとの気温・雨量の違いを比較する出発点に。広い地域の平均気候と、自生地点の標高・産地差は分けて見ます。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:543131-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "tulipa-saxatilis",
+      "category": "bulbs",
+      "name": "サクサティリス（原種チューリップ）",
+      "scientificName": "Tulipa saxatilis",
+      "aliases": [
+        "原種チューリップ",
+        "チューリップ",
+        "サクサティリス",
+        "サクサチリス",
+        "ベイケリ",
+        "ベイカリ",
+        "Tulipa bakeri"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "East Aegean Is.",
+        "Kriti",
+        "Türkiye"
+      ],
+      "regionCodes": [
+        "EAI",
+        "KRI",
+        "TUR"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:543068-1",
+      "checkedAt": "2026-10-06",
+      "note": "南エーゲ海の島々からトルコ南西部の種全体を表示します。KewはTulipa bakeriを同種の別名として扱うため、ベイケリでも検索できます。選抜された園芸品種の特性や島ごとの生育環境は別に確認します。",
+      "reference": {
+        "stars": 3,
+        "reason": "クレタ島などの島嶼とトルコ南西部の季節ごとの雨量・気温を比べる出発点に。原種の地域と、園芸品種・標高・土壌の違いを区別します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:543068-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "tulipa-linifolia",
+      "category": "bulbs",
+      "name": "リニフォリア（原種チューリップ）",
+      "scientificName": "Tulipa linifolia",
+      "aliases": [
+        "原種チューリップ",
+        "チューリップ",
+        "リニフォリア",
+        "リニホーリア",
+        "バタリニー",
+        "バタリニ",
+        "Tulipa batalinii"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Afghanistan",
+        "Iran",
+        "Tadzhikistan",
+        "Uzbekistan"
+      ],
+      "regionCodes": [
+        "AFG",
+        "IRN",
+        "TZK",
+        "UZB"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:542983-1",
+      "checkedAt": "2026-10-06",
+      "note": "Tulipa linifoliaという種の地域です。KewではTulipa bataliniiを同種の別名として扱うため、バタリニーからも検索できます。Batalinii Group等の園芸系統・選抜品種ごとの分布や耐性は示しません。",
+      "reference": {
+        "stars": 4,
+        "reason": "イラン北東部から中央アジア・アフガニスタンの季節差を調べる手がかりに。RHSは良い排水と過湿からの保護を勧めています。地域の降水量と鉢・庭の排水条件は別に確認します。",
+        "sourceUrl": "https://www.rhs.org.uk/plants/18526/tulipa-linifolia-15/details",
+        "basis": "cultivation"
+      }
+    },
+    {
+      "id": "tulipa-sylvestris",
+      "category": "bulbs",
+      "name": "シルベストリス（原種チューリップ）",
+      "scientificName": "Tulipa sylvestris",
+      "aliases": [
+        "原種チューリップ",
+        "チューリップ",
+        "シルベストリス",
+        "シルヴェストリス"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Albania",
+        "Algeria",
+        "Belarus",
+        "Bulgaria",
+        "Central European Russia",
+        "France",
+        "Greece",
+        "Iran",
+        "Italy",
+        "Kazakhstan",
+        "Krym",
+        "Libya",
+        "Morocco",
+        "North Caucasus",
+        "NW. Balkan Pen.",
+        "Portugal",
+        "Romania",
+        "Sardegna",
+        "Sicilia",
+        "South European Russia",
+        "Spain",
+        "Switzerland",
+        "Transcaucasus",
+        "Tunisia",
+        "Türkiye",
+        "Ukraine"
+      ],
+      "regionCodes": [
+        "ALB",
+        "ALG",
+        "BLR",
+        "BUL",
+        "FRA",
+        "GRC",
+        "IRN",
+        "ITA",
+        "KAZ",
+        "KRY",
+        "LBY",
+        "MOR",
+        "NCS",
+        "POR",
+        "ROM",
+        "RUC",
+        "RUS",
+        "SAR",
+        "SIC",
+        "SPA",
+        "SWI",
+        "TCS",
+        "TUN",
+        "TUR",
+        "UKR",
+        "YUG"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:543106-1",
+      "checkedAt": "2026-10-06",
+      "note": "Tulipa sylvestrisの種全体を表示し、複数の自然亜種を分けていません。Kewが帰化先として掲載するオランダ等は囲いに含めません。流通株の亜種・産地によって参考にする地域が異なります。",
+      "reference": {
+        "stars": 3,
+        "reason": "地中海周辺・欧州から中央アジアまでの広い気候差を比べる出発点に。亜種・産地による分布差があるため、囲み内の一地点で種全体の栽培条件を代表させません。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:543106-1",
+        "basis": "distribution"
+      }
+    },
+    {
+      "id": "tulipa-kaufmanniana",
+      "category": "bulbs",
+      "name": "カウフマニアナ（原種チューリップ）",
+      "scientificName": "Tulipa kaufmanniana",
+      "aliases": [
+        "原種チューリップ",
+        "チューリップ",
+        "カウフマニアナ",
+        "カウフマニアーナ",
+        "カウフマンニアナ"
+      ],
+      "taxonRank": "species",
+      "originKind": "native",
+      "nativeAreas": [
+        "Kazakhstan",
+        "Kirgizstan",
+        "Tadzhikistan",
+        "Uzbekistan"
+      ],
+      "regionCodes": [
+        "KAZ",
+        "KGZ",
+        "TZK",
+        "UZB"
+      ],
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:542962-1",
+      "checkedAt": "2026-10-06",
+      "note": "中央アジアに分布するTulipa kaufmannianaという野生の種です。Kaufmanniana Groupと呼ばれる園芸品種群全体の原産地域・耐性を表示するものではありません。",
+      "reference": {
+        "stars": 3,
+        "reason": "中央アジアの冬と夏の気温差、春から夏の雨量変化を比較する出発点に。自生地点の標高と、交雑・選抜された園芸品種の性質は別に確認します。",
+        "sourceUrl": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:542962-1",
+        "basis": "distribution"
+      }
     }
   ]
 }
