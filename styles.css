@@ -1467,7 +1467,7 @@ footer p + p { margin-top: 5px; }
 .projection-buttons button { min-height: 36px; padding: 5px 10px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: #536879; font: inherit; font-size: .74rem; font-weight: 700; cursor: pointer; }
 .projection-buttons button[aria-pressed="true"] { background: #fff; color: #234c68; border-color: #b8ccd9; }
 .globe-surface { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.globe-mode { background: #dce8eb; }
+.globe-mode { background: #02050d; }
 .globe-mode .flat-world { display: none; }
 .globe-mode #worldMap { position: relative; }
 #globeVectors { pointer-events: none; }

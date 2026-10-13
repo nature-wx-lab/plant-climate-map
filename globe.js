@@ -4,6 +4,97 @@
   const RAD = Math.PI / 180;
   const MAX_LAT = 85.05112878;
 
+  // Decorative celestial sphere: fixed motifs, not a dated astronomical sky chart.
+  // Reuse the camera's rotation and keep sky scale independent of Earth zoom.
+  function spaceScene() {
+    let seed = 0x5e71ab;
+    const random = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+    const stars = Array.from({ length: 1800 }, () => ({
+      longitude: random() * 360 - 180,
+      latitude: Math.asin(random() * 2 - 1) / RAD,
+      radius: .35 + random() ** 3 * 1.1,
+      opacity: .24 + random() * .66,
+      warm: random() > .88,
+    }));
+    const motifs = [
+      { points: [[-12,-2],[-7,7],[-1,-1],[5,6],[11,-3]], edges: [[0,1],[1,2],[2,3],[3,4]] },
+      { points: [[-13,6],[-6,3],[0,-1],[6,-3],[11,-2],[10,-9],[3,-10]], edges: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]] },
+      { points: [[-7,10],[7,8],[-2,1],[0,0],[2,-1],[-7,-11],[7,-10]], edges: [[0,1],[0,2],[1,4],[2,3],[3,4],[2,5],[4,6],[5,6]] },
+      { points: [[0,12],[0,2],[1,-11],[-10,1],[10,3]], edges: [[0,1],[1,2],[3,1],[1,4]] },
+    ];
+    const constellations = [];
+    for (const latitude of [-42, 10, 55]) for (let longitude = -180; longitude < 180; longitude += 45) {
+      const motif = motifs[constellations.length % motifs.length];
+      const scale = .7 + random() * .3;
+      const points = motif.points.map(([east, north]) => ({
+        longitude: longitude + east * scale / Math.cos(latitude * RAD),
+        latitude: latitude + north * scale,
+      }));
+      constellations.push({ points, edges: motif.edges });
+    }
+    return { stars, constellations };
+  }
+
+  function spacePoint(star, width, height, longitude, latitude) {
+    const point = globeForward(star.longitude, star.latitude, Math.hypot(width, height) * .65, longitude, latitude);
+    return point ? [point[0] + width / 2, point[1] + height / 2] : null;
+  }
+
+  function drawSpace(context, options, scene) {
+    const { width, height, longitude, latitude, zoom } = options;
+    const sky = context.createRadialGradient(width * .45, height * .42, 0,
+      width * .45, height * .42, Math.max(width, height) * .8);
+    sky.addColorStop(0, "#15253c"); sky.addColorStop(.5, "#090f20"); sky.addColorStop(1, "#02050d");
+    context.fillStyle = sky; context.fillRect(0, 0, width, height);
+    const point = (star) => spacePoint(star, width, height, longitude, latitude);
+    const visible = (p, margin = 8) => p && p[0] > -margin && p[0] < width + margin
+      && p[1] > -margin && p[1] < height + margin;
+    // Sparse, quiet blue haze behind the globe, without tinting its data surface.
+    for (const anchor of [{ longitude: 90, latitude: -10 }, { longitude: -70, latitude: 25 }]) {
+      const p = point(anchor);
+      if (!p) continue;
+      context.save(); context.translate(p[0], p[1]); context.rotate(-.35); context.scale(1, .42);
+      const haze = context.createRadialGradient(0, 0, 0, 0, 0, Math.max(width, height) * .5);
+      haze.addColorStop(0, "rgba(66, 84, 151, .16)"); haze.addColorStop(.4, "rgba(39, 69, 124, .08)");
+      haze.addColorStop(1, "rgba(19, 29, 63, 0)"); context.fillStyle = haze;
+      context.fillRect(-width, -height * 2, width * 2, height * 4); context.restore();
+    }
+    context.lineWidth = .7; context.strokeStyle = "rgba(162, 193, 236, .32)";
+    for (const constellation of scene.constellations) {
+      const points = constellation.points.map(point);
+      context.beginPath();
+      for (const [a, b] of constellation.edges) {
+        // Never join an edge across the celestial horizon.
+        if (!points[a] || !points[b]) continue;
+        context.moveTo(...points[a]); context.lineTo(...points[b]);
+      }
+      context.stroke();
+      for (const p of points) if (visible(p)) {
+        const glow = context.createRadialGradient(...p, 0, ...p, 5);
+        glow.addColorStop(0, "rgba(220, 237, 255, .55)"); glow.addColorStop(1, "rgba(161, 200, 255, 0)");
+        context.fillStyle = glow; context.fillRect(p[0] - 5, p[1] - 5, 10, 10);
+        context.beginPath(); context.arc(...p, 1.35, 0, Math.PI * 2); context.fillStyle = "#d9e8fa"; context.fill();
+      }
+    }
+    for (const star of scene.stars) {
+      const p = point(star);
+      if (!visible(p)) continue;
+      context.globalAlpha = star.opacity;
+      context.fillStyle = star.warm ? "#e8d4b9" : "#d2e2ff";
+      context.beginPath(); context.arc(...p, star.radius, 0, Math.PI * 2); context.fill();
+    }
+    context.globalAlpha = 1;
+    const radius = Math.min(width, height) * .46 * zoom;
+    const atmosphere = context.createRadialGradient(width / 2, height / 2, radius,
+      width / 2, height / 2, radius + 14);
+    atmosphere.addColorStop(0, "rgba(140, 198, 238, .23)"); atmosphere.addColorStop(1, "rgba(105, 169, 230, 0)");
+    context.fillStyle = atmosphere; context.beginPath();
+    context.arc(width / 2, height / 2, radius + 14, 0, Math.PI * 2); context.fill();
+  }
+
   function globeInverse(x, y, radius, longitude, latitude) {
     const east = x / radius;
     const north = -y / radius;
@@ -62,6 +153,7 @@
       this.sources = new Map();
       this.slots = {};
       this.frame = 0;
+      this.space = spaceScene();
       this.graticule = d3.geoGraticule().step([30, 20])();
       this.equator = { type: "LineString", coordinates: Array.from({ length: 73 }, (_, i) => [-180 + i * 5, 0]) };
       this.gl = raster.getContext("webgl", { alpha: true, premultipliedAlpha: false, antialias: false });
@@ -246,6 +338,7 @@
       const context = this.context;
       context.setTransform(density, 0, 0, density, 0, 0);
       context.clearRect(0, 0, o.width, o.height);
+      drawSpace(context, o, this.space);
       const projection = this.projection();
       const path = d3.geoPath(projection, context);
       context.beginPath(); path({ type: "Sphere" }); context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--ocean").trim(); context.fill();
@@ -364,4 +457,5 @@
   window.PlantGlobe = PlantGlobe;
   // Export pure coordinate helpers for the same-source contract test.
   PlantGlobe.coordinates = { globeForward, globeInverse, globeCenterForAnchor };
+  PlantGlobe.space = { scene: spaceScene, point: spacePoint, draw: drawSpace };
 })();

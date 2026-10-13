@@ -158,6 +158,24 @@ for (const file of ["vendor/d3-array-3.2.4.min.js", "vendor/d3-geo-3.1.1.min.js"
 const Globe = sandbox.window.PlantGlobe;
 const {globeForward:forward, globeInverse:inverse, globeCenterForAnchor:anchor} = Globe.coordinates;
 const close = (a,b) => assert.ok(Math.abs(a-b)<1e-7, a+" != "+b);
+const sky = Globe.space, scene = sky.scene();
+assert.equal(JSON.stringify(scene), JSON.stringify(sky.scene()), "sky must not flicker or regenerate on rotation");
+const star = {longitude:20,latitude:10};
+const start = sky.point(star,800,600,0,0), moved = sky.point(star,800,600,35,20);
+assert.ok(start && moved && Math.hypot(start[0]-moved[0],start[1]-moved[1])>100, "sky must follow the globe camera");
+const wrapped = sky.point(star,800,600,360,0);
+close(start[0],wrapped[0]); close(start[1],wrapped[1]);
+assert.equal(sky.point({longitude:180,latitude:0},800,600,0,0),null,"clip far-side stars");
+const segments=[], arcs=[];
+const ctx={createRadialGradient(){return {addColorStop(){}};},fillRect(){},save(){},restore(){},translate(){},rotate(){},scale(){},
+  beginPath(){},moveTo(...p){segments.push([p]);},lineTo(...p){segments.at(-1).push(p);},stroke(){},arc(...p){arcs.push(p);},fill(){}};
+const frame={width:800,height:600,longitude:0,latitude:0,zoom:1};
+sky.draw(ctx,frame,{stars:[star],constellations:[{points:[star,{longitude:180,latitude:0}],edges:[[0,1]]}]});
+assert.equal(segments.length,0,"a constellation edge must not span the celestial horizon");
+const pointAtZoom1=arcs[0].slice(0,2); arcs.length=0;
+sky.draw(ctx,{...frame,zoom:4},{stars:[star],constellations:[]});
+assert.deepEqual(arcs[0].slice(0,2),pointAtZoom1,"Earth zoom must not magnify the distant stars");
+assert.equal(ctx.globalAlpha,1,"sky alpha must not leak into the climate map");
 assert.equal(forward(180,0,100,0,0), null);
 assert.equal(inverse(100.01,0,100,0,0), null);
 close(inverse(0,0,100,179,90)[1],90);
@@ -227,7 +245,7 @@ api.endDrag(event(2,350,300));assert.ok(state.drag&&state.drag.moved);assert.equ
 api.moveDrag(event(1,160,310));api.endDrag(event(1,160,310));assert.equal(taps,0);assert.equal(state.pointers.size,0);
 state.projection="flat";state.zoom=1;api.beginDrag(event(3,150,300));api.beginDrag(event(4,250,300));
 api.moveDrag(event(4,350,300));assert.equal(state.zoom,2);close(state.centerX,437.5);
-console.log("GLOBE_COORDINATES_CLIPPING_FALLBACK_GESTURES_OK");
+console.log("GLOBE_COORDINATES_CLIPPING_FALLBACK_GESTURES_SPACE_ROTATION_OK");
 '''
     subprocess.run(["node", "-e", program, str(ROOT)], check=True)
 
@@ -576,7 +594,7 @@ def main() -> None:
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
     require("<script src=\"./app.js?v=20261006-origin-rating-label\" defer></script>" in index, "versioned local deferred script missing")
-    require('href="./styles.css?v=20261006-origin-rating-label"' in index, "versioned local stylesheet missing")
+    require('href="./styles.css?v=20261014-globe-space"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
     require("耐寒性・栽培可否の判定ではありません" in index, "reference rating disclaimer missing")
