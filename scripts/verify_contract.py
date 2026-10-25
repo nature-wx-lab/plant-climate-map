@@ -10,14 +10,17 @@ import re
 import struct
 import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
 from build_deployment_manifest import japan_files, plant_outline_files
 from verify_deployed_pages import EXPECTED_FILES as PUBLIC_FILES
+from plant_catalog import load_plant_catalog, plant_catalog_files
 
 
 ROOT = Path(__file__).resolve().parents[1]
 JAPAN_FILES = set(japan_files(ROOT))
 PLANT_OUTLINE_FILES = set(plant_outline_files(ROOT))
+PLANT_CATALOG_FILES = set(plant_catalog_files(ROOT))
 CLIMATE_LAYER_KEYS = ("temperature", "precipitation", "humidity", "solar")
 CLIMATE_LAYER_PERIODS = ("annual",) + tuple(f"{month:02d}" for month in range(1, 13))
 CLIMATE_LAYER_FILES = {
@@ -59,12 +62,13 @@ SOURCE_FILES = {
     "scripts/build_japan_humidity.py",
     "scripts/climate_layers_requirements.txt",
     "scripts/privacy_gate.py",
+    "scripts/plant_catalog.py",
     "scripts/verify_contract.py",
     "scripts/verify_deployed_pages.py",
     "sitemap.xml",
     "styles.css",
     "data/climate-layers/manifest.json",
-} | CLIMATE_LAYER_FILES | JAPAN_FILES | PLANT_OUTLINE_FILES
+} | CLIMATE_LAYER_FILES | JAPAN_FILES | PLANT_OUTLINE_FILES | PLANT_CATALOG_FILES
 DEPLOY_FILES = {
     "404.html",
     "app.js",
@@ -87,7 +91,7 @@ DEPLOY_FILES = {
     "sitemap.xml",
     "styles.css",
     "data/climate-layers/manifest.json",
-} | CLIMATE_LAYER_FILES | JAPAN_FILES | PLANT_OUTLINE_FILES
+} | CLIMATE_LAYER_FILES | JAPAN_FILES | PLANT_OUTLINE_FILES | PLANT_CATALOG_FILES
 
 
 def require(condition: bool, message: str) -> None:
@@ -102,6 +106,76 @@ def all_coordinates(value: object):
         for child in value:
             yield from all_coordinates(child)
 
+
+
+def verify_plant_chunk_loading() -> None:
+    """A broken or incomplete chunk must never expose a partial plant list."""
+    root = Path('/catalog-fixture')
+    main = {'schema':1, 'plants':[{'id':'first'}], 'plantFiles':['plants-2.json'], 'plantCount':2}
+    extra = {'schema':1, 'plants':[{'id':'second'}]}
+    def read(path, *args, **kwargs):
+        if str(path) not in documents:
+            raise FileNotFoundError(str(path))
+        return json.dumps(documents[str(path)])
+    documents = {str(root/'data/plants.json'):main, str(root/'data/plants-2.json'):extra}
+    with patch.object(Path, 'read_text', read):
+        require([p['id'] for p in load_plant_catalog(root)['plants']] == ['first','second'], 'chunk order lost')
+        for mutation in ({'plantFiles':['../private.json']}, {'plantFiles':['plants-2.json','plants-2.json']},
+                         {'plantFiles':[{}]}, {'plantCount':3}):
+            documents[str(root/'data/plants.json')] = main | mutation
+            try:
+                load_plant_catalog(root)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError('invalid plant catalog chunks accepted')
+        documents[str(root/'data/plants.json')] = main
+        for rows in ([{'id':'first'}], [{'id':''}], [{'id':42}], [None]):
+            documents[str(root/'data/plants-2.json')] = {'schema':1,'plants':rows}
+            try:
+                load_plant_catalog(root)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError('invalid or duplicate plant record accepted')
+        del documents[str(root/'data/plants-2.json')]
+        try:
+            load_plant_catalog(root)
+        except FileNotFoundError:
+            pass
+        else:
+            raise AssertionError('missing plant chunk accepted')
+    program = r'''
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const source=fs.readFileSync(process.argv[1],'utf8').match(/^  async function loadPlantCatalog\([\s\S]*?^  }/m)[0];
+const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+const run=new AsyncFunction('fetch','state','elements','document','renderPlantResults','plantMatchesCategory',source+'\nawait loadPlantCatalog();');
+const plant=id=>({id,name:id,aliases:[],category:'garden',reference:{stars:4,reason:'provisional',sourceUrl:'https://example.org/garden'},sourceUrl:'https://example.org/taxon',regionCodes:['KOR']});
+async function check(change={}) {
+ const main={schema:1,plants:[plant('first')],plantFiles:['plants-2.json'],plantCount:2,categories:[{id:'garden',label:'Garden'}],outlineFiles:['plant-outlines.json'],regionSource:{sha256:'fixed'}};
+ const shard={schema:1,plants:[plant('second')]};
+ if(change.main)Object.assign(main,change.main);if(change.shard)Object.assign(shard,change.shard);
+ const calls=[],state={plants:[]};let rendered=0;
+ const elements={plantCategory:{options:[{}],disabled:true,append(){}},plantSearch:{disabled:true},plantCatalogCount:{},plantResultCount:{}};
+ const fetch=async url=>{calls.push(url);let data;
+  if(url.includes('/plants.json?'))data=main;
+  else if(url.includes('/plants-2.json?')){if(change.missing)return {ok:false,status:404};data=shard;}
+  else if(url.includes('/plant-outlines.json?'))data={schema:1,sourceSha256:'fixed',plantKeys:{first:'KOR',second:'KOR'},outlines:{KOR:{rings:[]}}};
+  else throw Error('unexpected fetch '+url);
+  return {ok:true,json:async()=>structuredClone(data)};
+ };
+ await run(fetch,state,elements,{createElement:()=>({})},()=>rendered++,()=>true);
+ return {calls,state,elements,rendered};
+}
+(async()=>{
+ const good=await check();assert.deepEqual(good.state.plants.map(p=>p.id),['first','second']);assert.equal(good.rendered,1);assert.equal(good.elements.plantSearch.disabled,false);
+ for(const change of [{missing:true},{shard:{schema:2}},{shard:{plants:[plant('first')]}},{shard:{plants:[plant(42)]}},{main:{plantCount:3}},{main:{plantFiles:['../private.json']}}]){
+  const bad=await check(change);assert.equal(bad.state.plants.length,0);assert.equal(bad.rendered,0);assert.equal(bad.elements.plantSearch.disabled,true);assert.equal(bad.elements.plantCatalogCount.textContent,'読込エラー');assert.ok(!bad.calls.some(x=>x.includes('../')));
+ }
+ console.log('PLANT_CHUNKS_ORDER_MISSING_DUPLICATE_COUNT_PATH_FAILURES_OK');
+})().catch(e=>{console.error(e);process.exit(1)});
+'''
+    subprocess.run(['node','-e',program,str(ROOT/'app.js')],check=True)
 
 
 def verify_map_context() -> None:
@@ -410,7 +484,7 @@ console.log("COMPARISON_MATH_OK");
 
 
 def verify_plant_catalog(app: str) -> None:
-    catalog = json.loads((ROOT / 'data/plants.json').read_text())
+    catalog = load_plant_catalog(ROOT)
     outlines = json.loads((ROOT / 'data/plant-outlines.json').read_text())
     for filename in catalog['outlineFiles'][1:]:
         chunk = json.loads((ROOT / 'data' / filename).read_text())
@@ -428,18 +502,21 @@ def verify_plant_catalog(app: str) -> None:
     require(catalog['schema'] == outlines['schema'] == 1, 'plant schema mismatch')
     require(catalog['regionSource']['sha256'] == outlines['sourceSha256'], 'plant boundary source mismatch')
     require(catalog['ratingMethod']['kind'] == 'editorial-provisional', 'rating method missing')
-    expected = {'tropical':648, 'vegetables':117, 'annuals':118, 'perennials':661, 'bulbs':167, 'trees':528,
-                'australian':291, 'succulents':334, 'caudex':91, 'tillandsia':45}
+    expected = {'tropical': 804, 'vegetables': 130, 'annuals': 124, 'perennials': 846, 'trees': 1291, 'australian': 643, 'succulents': 397, 'caudex': 93, 'tillandsia': 45, 'bulbs': 627}
     require(catalog['checkedAt'] == '2026-10-25', 'catalog update date missing')
-    require(len(plants) == 3000 and len({p['id'] for p in plants}) == 3000, 'plant count or duplicate ID')
+    require(len(plants) == 5000 and len({p['id'] for p in plants}) == 5000, 'plant count or duplicate ID')
     require({c['id'] for c in catalog['categories']} == set(expected), 'plant categories mismatch')
     require({c:sum(p['category'] == c for p in plants) for c in expected} == expected, 'genre count mismatch')
-    require(len({p['scientificName'] for p in plants}) == 3000, 'duplicate accepted taxa or garden groups')
+    require(len({p['scientificName'] for p in plants}) == 5000, 'duplicate accepted taxa or garden groups')
     require(all(p['checkedAt'] == '2026-10-06' for p in plants[261:1000]), 'previous source check date missing')
     require(hashlib.sha256(json.dumps(plants[:1000], ensure_ascii=False, sort_keys=True).encode()).hexdigest()
             == '7c94b4e63c28af65b18f45d25ea7dd753b19f7cb616bbbe93cca51c3824945d6',
             'the original 1000 catalog records must remain unchanged')
-    additions = plants[1000:]
+    require(hashlib.sha256(json.dumps(plants[:3000], ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+            == '6cc68bde6b371df3aed781040d4d72603143037113f6a584ca5b7e2fff7eb689',
+            'the previous 3000 catalog records must remain unchanged')
+    require(catalog['plantCount'] == 5000 and catalog['plantFiles'], 'record chunks and full catalog count missing')
+    additions = plants[3000:]
     require(all(p['checkedAt'] == '2026-10-25' and p['originKind'] == 'native'
                 and p['taxonRank'] in ('species','variety','subspecies')
                 and (p['taxonAuthor'] or (p['taxonRank'] != 'species'
@@ -449,11 +526,12 @@ def verify_plant_catalog(app: str) -> None:
                 and p['note'] and '未評価' in p['reference']['reason'] for p in additions),
             'new entries need an accepted native taxon, horticultural evidence and provisional rating')
     require(len({p['sourceUrl'] for p in additions}) == 2000
-            and not ({p['sourceUrl'] for p in additions} & {p['sourceUrl'] for p in plants[:1000]}),
+            and not ({p['sourceUrl'] for p in additions} & {p['sourceUrl'] for p in plants[:3000]}),
             'new accepted taxon sources must not duplicate each other or previous entries')
     horticultural_sources = ('https://plants.ces.ncsu.edu/plants/', 'https://www.nparks.gov.sg/florafaunaweb/',
+                            'https://www.anbg.gov.au/gnp/',
                             'https://anpsa.org.au/plant_profiles/', 'https://media.huntington.org/ISI/',
-                            'https://www.aos.org/')
+                            'https://www.aos.org/', 'https://www.pacificbulbsociety.org/pbswiki/index.php/')
     require(all(p['reference']['sourceUrl'].startswith(horticultural_sources) for p in additions),
             'new entries need linked horticultural institution evidence')
     wcvp = catalog['taxonomySources']['WCVP']
@@ -503,7 +581,7 @@ def verify_plant_catalog(app: str) -> None:
             'bulb genre label mismatch')
     require(by_id['liatris-spicata']['category'] == 'perennials'
             and by_id['liatris-spicata'].get('additionalCategories') == ['bulbs']
-            and sum(p['category'] == 'bulbs' or 'bulbs' in p.get('additionalCategories', []) for p in plants) == 168,
+            and sum(p['category'] == 'bulbs' or 'bulbs' in p.get('additionalCategories', []) for p in plants) == 628,
             'shared perennial/bulb membership missing')
     require(all(p['note'] and p['reference']['reason'] for p in plants if p['category'] == 'bulbs'),
             'bulb species or cultivar explanation missing')
@@ -585,7 +663,7 @@ def verify_plant_catalog(app: str) -> None:
             'Tillandsia research must refer to original species')
     select_body = re.search(r'^  function selectPlant\([\s\S]*?^  }', app, re.M).group(0)
     require('setView(' not in select_body and 'focusPlantOrigin(' not in select_body, 'plant selection must preserve view')
-    print('PLANT_CATALOG_OK 3000 entries, original 1000 unchanged, 10 genres, 168 bulb choices, 17 garden groups, horticultural evidence, outlines')
+    print('PLANT_CATALOG_OK 5000 entries, previous 3000 unchanged, 10 genres, 628 bulb choices, 17 garden groups, horticultural evidence, outlines')
 
 
 def main() -> None:
@@ -618,7 +696,7 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261025-catalog-3000\" defer></script>" in index, "versioned local deferred script missing")
+    require("<script src=\"./app.js?v=20261025-catalog-5000\" defer></script>" in index, "versioned local deferred script missing")
     require('href="./styles.css?v=20261014-globe-space"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
@@ -873,6 +951,7 @@ def main() -> None:
     require("git diff --check" in hook, "pre-push whitespace gate missing")
 
     subprocess.run(["node", "--check", str(ROOT / "app.js")], check=True)
+    verify_plant_chunk_loading()
     verify_comparison_math()
     verify_map_context()
     verify_globe_math()

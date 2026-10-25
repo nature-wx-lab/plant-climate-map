@@ -1151,11 +1151,19 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      const catalog = await fetchCatalogJSON("./data/plants.json?v=20261025-catalog-3000");
+      const catalog = await fetchCatalogJSON("./data/plants.json?v=20261025-catalog-5000");
+      const plantFiles = catalog.plantFiles ?? [];
+      if (!Array.isArray(plantFiles) || new Set(plantFiles).size !== plantFiles.length
+          || plantFiles.some((name) => typeof name !== "string" || !/^plants-(?:[2-9]|[1-9][0-9]+)\.json$/.test(name))) throw new Error("植物カタログファイル名が不正です");
+      const plantChunks = await Promise.all(plantFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=20261025-catalog-5000`)));
+      if (!Array.isArray(catalog.plants) || plantChunks.some((chunk) => chunk.schema !== catalog.schema || !Array.isArray(chunk.plants))) throw new Error("植物カタログ形式が不正です");
+      catalog.plants = catalog.plants.concat(...plantChunks.map((chunk) => chunk.plants));
+      if ((catalog.plantCount !== undefined && catalog.plantCount !== catalog.plants.length)
+          || new Set(catalog.plants.map((plant) => plant.id)).size !== catalog.plants.length) throw new Error("植物カタログの件数・識別子が不正です");
       if (!Array.isArray(catalog.outlineFiles) || !catalog.outlineFiles.length
           || new Set(catalog.outlineFiles).size !== catalog.outlineFiles.length
           || catalog.outlineFiles.some((name) => !/^plant-outlines(?:-bulbs|-(?:[3-9]|[1-9][0-9]+))?\.json$/.test(name))) throw new Error("植物分布ファイル名が不正です");
-      const outlineSources = await Promise.all(catalog.outlineFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=20261025-catalog-3000`)));
+      const outlineSources = await Promise.all(catalog.outlineFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=20261025-catalog-5000`)));
       if (catalog.schema !== 1 || !Array.isArray(catalog.plants) || !Array.isArray(catalog.categories)
           || outlineSources.some((source) => source.schema !== 1 || !source.outlines || !source.plantKeys
             || source.sourceSha256 !== catalog.regionSource?.sha256)) throw new Error("植物データ形式が不正です");
@@ -1165,7 +1173,7 @@
       };
       const categoryIds = new Set(catalog.categories.map((category) => category.id));
       for (const plant of catalog.plants) {
-        if (!plant.id || !plant.name || !Array.isArray(plant.aliases)
+        if (typeof plant.id !== "string" || !plant.id || !plant.name || !Array.isArray(plant.aliases)
             || !categoryIds.has(plant.category)
             || (plant.additionalCategories !== undefined && (!Array.isArray(plant.additionalCategories)
               || plant.additionalCategories.some((category) => !categoryIds.has(category) || category === plant.category)

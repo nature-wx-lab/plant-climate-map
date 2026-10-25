@@ -11,6 +11,8 @@ from shapely import make_valid, set_precision
 from shapely.geometry import shape
 from shapely.ops import unary_union
 
+from plant_catalog import load_plant_catalog
+
 ROOT = Path(__file__).resolve().parents[1]
 TOLERANCE = 0.025  # degrees; drawing simplification, never a habitat boundary
 CHUNK_BYTES = 2500000
@@ -25,7 +27,8 @@ def polygons(geometry):
 
 
 def build(source_path: Path) -> None:
-    catalog = json.loads((ROOT / 'data/plants.json').read_text())
+    catalog_header = json.loads((ROOT / 'data/plants.json').read_text())
+    catalog = load_plant_catalog(ROOT)
     raw = source_path.read_bytes()
     digest = hashlib.sha256(raw).hexdigest()
     if digest != catalog['regionSource']['sha256']:
@@ -99,9 +102,9 @@ def build(source_path: Path) -> None:
             plant_keys[plant['id']] = key
             outlines[key] = {'rings': rings}
     flush()
-    catalog['outlineFiles'] = filenames
+    catalog_header['outlineFiles'] = filenames
     # Keep a growing catalog within the unchanged public per-file size limit.
-    (ROOT / 'data/plants.json').write_text(json.dumps(catalog, ensure_ascii=False, separators=(',', ':')) + '\n')
+    (ROOT / 'data/plants.json').write_text(json.dumps(catalog_header, ensure_ascii=False, separators=(',', ':')) + '\n')
 
 
 if __name__ == '__main__':

@@ -10,6 +10,8 @@ import re
 import shutil
 from pathlib import Path
 
+from plant_catalog import plant_catalog_files
+
 
 CLIMATE_LAYER_FILES = tuple(
     f"data/climate-layers/{key}-{period}.png"
@@ -92,7 +94,7 @@ def main() -> None:
     destination.mkdir(parents=True)
 
     files: dict[str, dict[str, int | str]] = {}
-    for relative in tuple(dict.fromkeys(DEPLOY_FILES + japan_files(root) + plant_outline_files(root))):
+    for relative in tuple(dict.fromkeys(DEPLOY_FILES + japan_files(root) + plant_outline_files(root) + plant_catalog_files(root))):
         source = root / relative
         if not source.is_file() or source.is_symlink():
             raise SystemExit(f"invalid deploy source: {relative}")
