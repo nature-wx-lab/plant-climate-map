@@ -75,6 +75,10 @@ def build(source_path: Path) -> None:
             continue
         if key in existing_outlines or key in outlines:
             plant_keys[plant['id']] = key
+            if len(encoded()) > CHUNK_BYTES:
+                del plant_keys[plant['id']]
+                flush()
+                plant_keys[plant['id']] = key
             continue
         merged = unary_union([regions[code] for code in codes])
         # Exterior rings only: connected regions share one outer line; islands stay separate.
@@ -96,7 +100,8 @@ def build(source_path: Path) -> None:
             outlines[key] = {'rings': rings}
     flush()
     catalog['outlineFiles'] = filenames
-    (ROOT / 'data/plants.json').write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + '\n')
+    # Keep a growing catalog within the unchanged public per-file size limit.
+    (ROOT / 'data/plants.json').write_text(json.dumps(catalog, ensure_ascii=False, separators=(',', ':')) + '\n')
 
 
 if __name__ == '__main__':

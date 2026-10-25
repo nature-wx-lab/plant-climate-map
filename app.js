@@ -1151,11 +1151,11 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      const catalog = await fetchCatalogJSON("./data/plants.json?v=20261006-catalog-1000-fruits");
+      const catalog = await fetchCatalogJSON("./data/plants.json?v=20261025-catalog-3000");
       if (!Array.isArray(catalog.outlineFiles) || !catalog.outlineFiles.length
           || new Set(catalog.outlineFiles).size !== catalog.outlineFiles.length
           || catalog.outlineFiles.some((name) => !/^plant-outlines(?:-bulbs|-(?:[3-9]|[1-9][0-9]+))?\.json$/.test(name))) throw new Error("植物分布ファイル名が不正です");
-      const outlineSources = await Promise.all(catalog.outlineFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=20261006-catalog-1000-fruits`)));
+      const outlineSources = await Promise.all(catalog.outlineFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=20261025-catalog-3000`)));
       if (catalog.schema !== 1 || !Array.isArray(catalog.plants) || !Array.isArray(catalog.categories)
           || outlineSources.some((source) => source.schema !== 1 || !source.outlines || !source.plantKeys
             || source.sourceSha256 !== catalog.regionSource?.sha256)) throw new Error("植物データ形式が不正です");
