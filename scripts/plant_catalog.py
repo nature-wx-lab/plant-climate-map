@@ -36,5 +36,16 @@ def load_plant_catalog(root: Path) -> dict:
         raise ValueError('Invalid plant catalog record ID')
     if len({plant['id'] for plant in plants}) != len(plants):
         raise ValueError('Duplicate plant catalog record ID')
+    by_id = {plant['id']: plant for plant in plants}
+    for plant in plants:
+        if plant.get('taxonRank') == 'market-name' and (
+                plant.get('originKind') != 'unresolved' or plant.get('nativeAreas') != []
+                or plant.get('regionCodes') != [] or not plant.get('sourceLabel')
+                or plant.get('reference', {}).get('stars', 5) > 2):
+            raise ValueError('Market names must not inherit a wild native range')
+        related = plant.get('relatedPlantId')
+        if related and (related == plant['id'] or not by_id.get(related, {}).get('regionCodes')
+                        or not str(plant.get('relatedEvidenceUrl', '')).startswith('https://')):
+            raise ValueError('Invalid documented related taxon')
     catalog['plants'] = plants
     return catalog

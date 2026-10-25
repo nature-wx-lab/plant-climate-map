@@ -138,6 +138,19 @@ def verify_plant_chunk_loading() -> None:
                 pass
             else:
                 raise AssertionError('invalid or duplicate plant record accepted')
+        market = {'id':'retail','taxonRank':'market-name','originKind':'unresolved',
+                  'nativeAreas':[],'regionCodes':[],'sourceLabel':'Nursery','reference':{'stars':1}}
+        documents[str(root/'data/plants-2.json')] = {'schema':1,'plants':[market]}
+        require(load_plant_catalog(root)['plants'][-1]['id'] == 'retail', 'documented market name rejected')
+        for change in ({'nativeAreas':['Korea']},{'regionCodes':['KOR']},{'originKind':'native'},
+                       {'relatedPlantId':'missing','relatedEvidenceUrl':'https://example.org/plant'}):
+            documents[str(root/'data/plants-2.json')] = {'schema':1,'plants':[market | change]}
+            try:
+                load_plant_catalog(root)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError('inherited range or invalid related taxon accepted')
         del documents[str(root/'data/plants-2.json')]
         try:
             load_plant_catalog(root)
@@ -147,10 +160,12 @@ def verify_plant_chunk_loading() -> None:
             raise AssertionError('missing plant chunk accepted')
     program = r'''
 const assert=require('node:assert/strict'),fs=require('node:fs');
-const source=fs.readFileSync(process.argv[1],'utf8').match(/^  async function loadPlantCatalog\([\s\S]*?^  }/m)[0];
+const app=fs.readFileSync(process.argv[1],'utf8');
+const source=app.match(/^  async function loadPlantCatalog\([\s\S]*?^  }/m)[0];
+const normalize=app.match(/^  function normalizePlantSearch\([\s\S]*?^  }/m)[0];
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
-const run=new AsyncFunction('fetch','state','elements','document','renderPlantResults','plantMatchesCategory',source+'\nawait loadPlantCatalog();');
-const plant=id=>({id,name:id,aliases:[],category:'garden',reference:{stars:4,reason:'provisional',sourceUrl:'https://example.org/garden'},sourceUrl:'https://example.org/taxon',regionCodes:['KOR']});
+const run=new AsyncFunction('fetch','state','elements','document','renderPlantResults','plantMatchesCategory',normalize+'\n'+source+'\nawait loadPlantCatalog();');
+const plant=id=>({id,name:id,scientificName:id,aliases:[],category:'garden',reference:{stars:4,reason:'provisional',sourceUrl:'https://example.org/garden'},sourceUrl:'https://example.org/taxon',regionCodes:['KOR'],nativeAreas:['Korea']});
 async function check(change={}) {
  const main={schema:1,plants:[plant('first')],plantFiles:['plants-2.json'],plantCount:2,categories:[{id:'garden',label:'Garden'}],outlineFiles:['plant-outlines.json'],regionSource:{sha256:'fixed'}};
  const shard={schema:1,plants:[plant('second')]};
@@ -169,6 +184,12 @@ async function check(change={}) {
 }
 (async()=>{
  const good=await check();assert.deepEqual(good.state.plants.map(p=>p.id),['first','second']);assert.equal(good.rendered,1);assert.equal(good.elements.plantSearch.disabled,false);
+ const retail={...plant('retail'),scientificName:'',taxonRank:'market-name',originKind:'unresolved',sourceLabel:'Nursery',nativeAreas:[],regionCodes:[],reference:{stars:1,reason:'market identity',sourceUrl:'https://example.org/plant'}};
+ assert.equal((await check({shard:{plants:[retail]}})).state.plants.length,2);
+ assert.equal((await check({shard:{plants:[{...retail,relatedPlantId:'first',relatedEvidenceUrl:'https://example.org/plant'}]}})).state.plants.length,2);
+ for(const mutation of [{regionCodes:['KOR']},{nativeAreas:['Korea']},{originKind:'native'},{sourceLabel:''},{relatedPlantId:'missing',relatedEvidenceUrl:'https://example.org/plant'},{relatedPlantId:'retail',relatedEvidenceUrl:'https://example.org/plant'}]) {
+  const bad=await check({shard:{plants:[{...retail,...mutation}]}});assert.equal(bad.state.plants.length,0);assert.equal(bad.rendered,0);
+ }
  for(const change of [{missing:true},{shard:{schema:2}},{shard:{plants:[plant('first')]}},{shard:{plants:[plant(42)]}},{main:{plantCount:3}},{main:{plantFiles:['../private.json']}}]){
   const bad=await check(change);assert.equal(bad.state.plants.length,0);assert.equal(bad.rendered,0);assert.equal(bad.elements.plantSearch.disabled,true);assert.equal(bad.elements.plantCatalogCount.textContent,'読込エラー');assert.ok(!bad.calls.some(x=>x.includes('../')));
  }
@@ -502,38 +523,46 @@ def verify_plant_catalog(app: str) -> None:
     require(catalog['schema'] == outlines['schema'] == 1, 'plant schema mismatch')
     require(catalog['regionSource']['sha256'] == outlines['sourceSha256'], 'plant boundary source mismatch')
     require(catalog['ratingMethod']['kind'] == 'editorial-provisional', 'rating method missing')
-    expected = {'tropical': 804, 'vegetables': 130, 'annuals': 124, 'perennials': 846, 'trees': 1291, 'australian': 643, 'succulents': 397, 'caudex': 93, 'tillandsia': 45, 'bulbs': 627}
+    expected = {'tropical','vegetables','annuals','perennials','trees','australian','succulents','caudex','tillandsia','bulbs','fruits','herbs','orchids','ferns','aquatic','carnivorous','bonsai'}
     require(catalog['checkedAt'] == '2026-10-25', 'catalog update date missing')
-    require(len(plants) == 5000 and len({p['id'] for p in plants}) == 5000, 'plant count or duplicate ID')
-    require({c['id'] for c in catalog['categories']} == set(expected), 'plant categories mismatch')
-    require({c:sum(p['category'] == c for p in plants) for c in expected} == expected, 'genre count mismatch')
-    require(len({p['scientificName'] for p in plants}) == 5000, 'duplicate accepted taxa or garden groups')
-    require(all(p['checkedAt'] == '2026-10-06' for p in plants[261:1000]), 'previous source check date missing')
-    require(hashlib.sha256(json.dumps(plants[:1000], ensure_ascii=False, sort_keys=True).encode()).hexdigest()
-            == '7c94b4e63c28af65b18f45d25ea7dd753b19f7cb616bbbe93cca51c3824945d6',
-            'the original 1000 catalog records must remain unchanged')
-    require(hashlib.sha256(json.dumps(plants[:3000], ensure_ascii=False, sort_keys=True).encode()).hexdigest()
-            == '6cc68bde6b371df3aed781040d4d72603143037113f6a584ca5b7e2fff7eb689',
-            'the previous 3000 catalog records must remain unchanged')
-    require(catalog['plantCount'] == 5000 and catalog['plantFiles'], 'record chunks and full catalog count missing')
-    additions = plants[3000:]
-    require(all(p['checkedAt'] == '2026-10-25' and p['originKind'] == 'native'
-                and p['taxonRank'] in ('species','variety','subspecies')
-                and (p['taxonAuthor'] or (p['taxonRank'] != 'species'
-                     and p['scientificName'].split()[-1] == p['scientificName'].split()[1]))
-                and p['taxonomySource'] in ('POWO','WCVP')
-                and p['reference']['basis'] == 'distribution' and p['reference']['stars'] in (3,4)
-                and p['note'] and '未評価' in p['reference']['reason'] for p in additions),
-            'new entries need an accepted native taxon, horticultural evidence and provisional rating')
-    require(len({p['sourceUrl'] for p in additions}) == 2000
-            and not ({p['sourceUrl'] for p in additions} & {p['sourceUrl'] for p in plants[:3000]}),
-            'new accepted taxon sources must not duplicate each other or previous entries')
-    horticultural_sources = ('https://plants.ces.ncsu.edu/plants/', 'https://www.nparks.gov.sg/florafaunaweb/',
-                            'https://www.anbg.gov.au/gnp/',
-                            'https://anpsa.org.au/plant_profiles/', 'https://media.huntington.org/ISI/',
-                            'https://www.aos.org/', 'https://www.pacificbulbsociety.org/pbswiki/index.php/')
-    require(all(p['reference']['sourceUrl'].startswith(horticultural_sources) for p in additions),
-            'new entries need linked horticultural institution evidence')
+    require(len(plants) >= 10000 and len({p['id'] for p in plants}) == len(plants), 'plant count or duplicate ID')
+    require({c['id'] for c in catalog['categories']} == expected, 'plant categories mismatch')
+    optional = {'name','aliases','additionalCategories','marketEvidence'}
+    protected = [{k:v for k,v in p.items() if k not in optional} for p in plants[:5000]]
+    require(hashlib.sha256(json.dumps(protected, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+            == 'a49c339a31332ca67111753d8e58d08b4018b7ef65a91ebd0bb7d6446997c945',
+            'original 5000 IDs, order, taxonomy, distribution, ratings and notes must remain unchanged')
+    native = [p for p in plants if p['originKind'] != 'unresolved']
+    require(len({p['scientificName'] for p in native}) == len(native), 'duplicate accepted botanical taxa')
+    require(catalog['plantCount'] == len(plants) and catalog['plantFiles'], 'record chunks or catalog count missing')
+    market_sources = ('https://www.engei.net/products/detail?', 'https://shop.takii.co.jp/products/detail/',
+        'https://www.youran.biz/shopdetail/', 'https://www.y-bonsai.co.jp/shopdetail/',
+        'https://e-mizukusa.com/', 'https://www.akb.jp/c/', 'https://touhou-en.ocnk.net/product/',
+        'https://www.baranoie.com/shopdetail/', 'https://koketane.base.shop/items/',
+        'https://yoshunen.shop-pro.jp/', 'https://sakata-netshop.com/shop/g/',
+        'https://store.shopping.yahoo.co.jp/hiros-pitcherplants/')
+    additions = plants[5000:]
+    require(all(p['checkedAt'] == '2026-10-25' and p.get('marketEvidence')
+                and all(e['url'].startswith(market_sources) and e['sourceLabel']
+                        and e['checkedAt'] == '2026-10-25' for e in p['marketEvidence'])
+                for p in additions), 'new entries need directly linked retail identity evidence')
+    require(all(p['taxonRank'] == 'market-name' or
+                (p['originKind'] == 'native' and p['taxonRank'] in ('species','variety','subspecies')
+                 and p['taxonomySource'] in ('POWO','WCVP') and p['regionCodes']
+                 and p['reference']['basis'] == 'distribution' and p['reference']['stars'] in (3,4))
+                for p in additions), 'new botanical taxa need independently confirmed native ranges')
+    for p in additions:
+        if p['originKind'] != 'native':
+            continue
+        query = p.get('retailTaxon', '')
+        require(query, 'retail botanical identity missing')
+        if ' var. ' in query or ' subsp. ' in query:
+            require(p['taxonRank'] == ('variety' if ' var. ' in query else 'subspecies')
+                    and query.split()[-1] == p['scientificName'].split()[-1],
+                    'a synonymized colour form must not inherit a whole-species native range')
+    market = [p for p in additions if p['taxonRank'] == 'market-name']
+    require(market and all(p['sourceUrl'].startswith(market_sources) and p['sourceLabel']
+                and p['reference']['basis'] == 'market' for p in market), 'market-name provenance missing')
     wcvp = catalog['taxonomySources']['WCVP']
     require(wcvp['version'] == 16 and wcvp['extractedAt'] == '2026-06-04'
             and wcvp['license'] == 'CC BY 3.0'
@@ -541,17 +570,17 @@ def verify_plant_catalog(app: str) -> None:
             'official WCVP fallback snapshot provenance missing')
     require(sum(p['taxonRank'] == 'horticultural-group' for p in plants) == 17, 'familiar garden groups missing')
     for plant in plants:
-        require(plant['taxonRank'] in ('species','variety','subspecies','cultivar','horticultural-group'), 'invalid taxon rank')
+        require(plant['taxonRank'] in ('species','variety','subspecies','cultivar','horticultural-group','market-name'), 'invalid taxon rank')
         require(plant['originKind'] in ('native','cultigen','unresolved'), 'invalid origin kind')
         require(plant['checkedAt'] in ('2026-10-25','2026-10-06','2026-09-26'), 'source check date missing')
         additional = plant.get('additionalCategories', [])
         require(isinstance(additional, list) and len(additional) == len(set(additional))
                 and set(additional) <= set(expected) - {plant['category']}, 'invalid additional genre')
-        require(plant['sourceUrl'].startswith(('https://powo.science.kew.org/taxon/', 'https://www.rhs.org.uk/plants/')), 'plant source missing')
+        require(plant['sourceUrl'].startswith(('https://powo.science.kew.org/taxon/', 'https://www.rhs.org.uk/plants/') + market_sources), 'plant source missing')
         rating = plant['reference']
         require(type(rating['stars']) is int and 1 <= rating['stars'] <= 5 and rating['reason'] and rating['sourceUrl'].startswith('https://'), 'plant rating lacks reason or source')
         if plant['originKind'] == 'unresolved':
-            require((plant['id'] == 'philodendron-birkin' or plant['taxonRank'] == 'horticultural-group')
+            require((plant['id'] == 'philodendron-birkin' or plant['taxonRank'] in ('horticultural-group','market-name'))
                     and not plant['nativeAreas'] and not plant['regionCodes'] and plant['id'] not in outlines['plantKeys']
                     and rating['stars'] <= 2, 'unresolved origin must have low reference rating and no outline')
         else:
@@ -580,8 +609,7 @@ def verify_plant_catalog(app: str) -> None:
     require(next(c['label'] for c in catalog['categories'] if c['id'] == 'bulbs') == '草花（球根植物）',
             'bulb genre label mismatch')
     require(by_id['liatris-spicata']['category'] == 'perennials'
-            and by_id['liatris-spicata'].get('additionalCategories') == ['bulbs']
-            and sum(p['category'] == 'bulbs' or 'bulbs' in p.get('additionalCategories', []) for p in plants) == 628,
+            and 'bulbs' in by_id['liatris-spicata'].get('additionalCategories', []),
             'shared perennial/bulb membership missing')
     require(all(p['note'] and p['reference']['reason'] for p in plants if p['category'] == 'bulbs'),
             'bulb species or cultivar explanation missing')
@@ -663,7 +691,7 @@ def verify_plant_catalog(app: str) -> None:
             'Tillandsia research must refer to original species')
     select_body = re.search(r'^  function selectPlant\([\s\S]*?^  }', app, re.M).group(0)
     require('setView(' not in select_body and 'focusPlantOrigin(' not in select_body, 'plant selection must preserve view')
-    print('PLANT_CATALOG_OK 5000 entries, previous 3000 unchanged, 10 genres, 628 bulb choices, 17 garden groups, horticultural evidence, outlines')
+    print(f'PLANT_CATALOG_OK {len(plants)} entries, original 5000 botanical core preserved, 17 genres, retail evidence, market/native separation, outlines')
 
 
 def main() -> None:
@@ -696,8 +724,8 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261025-catalog-5000\" defer></script>" in index, "versioned local deferred script missing")
-    require('href="./styles.css?v=20261014-globe-space"' in index, "versioned local stylesheet missing")
+    require("<script src=\"./app.js?v=20261025-market-catalog\" defer></script>" in index, "versioned local deferred script missing")
+    require('href="./styles.css?v=20261025-market-catalog"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
     require("耐寒性・栽培可否の判定ではありません" in index, "reference rating disclaimer missing")

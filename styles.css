@@ -199,6 +199,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .category-field > span { font-size: 0.68rem; color: #667b72; }
 .plant-browser select { padding: 7px 8px; min-height: 38px; }
 .plant-result-count { margin: 10px 3px 5px; font-size: 0.65rem; color: #6a7c74; line-height: 1.5; }
+.plant-show-more { width: 100%; min-height: 30px; margin-top: 4px; border: 1px solid #c5d4cd; border-radius: 4px; background: #f5f8f6; color: #254d3d; font: inherit; font-size: 0.72rem; cursor: pointer; }
 .plant-results { overflow-anchor: none; max-height: max(180px, calc(100svh - 294px)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; border-top: 1px solid #e3ebe7; border-bottom: 1px solid #e3ebe7; }
 .plant-picker:has(#selectedPlant:not([hidden])) .plant-results { max-height: max(150px, calc(100svh - 466px)); }
 .plant-result { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 6px; width: 100%; min-height: 58px; padding: 10px 10px 9px; border: 0; border-bottom: 1px solid #e9eeeb; background: #fff; color: #284b3c; text-align: left; cursor: pointer; }
@@ -214,7 +215,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .plant-result:focus-visible { outline-offset: -2px; }
 .selected-plant { margin-top: 12px; padding: 12px 2px 0; border-top: 2px solid #294e3f; }
 .selected-plant-heading { display: grid; gap: 3px; }
-.selected-plant-heading strong { font-size: 0.82rem; }
+.selected-plant-heading strong { font-size: 0.82rem; overflow-wrap: anywhere; }
 .selected-plant-heading small { color: #6b7c73; font-size: 0.68rem; font-style: italic; }
 .origin-line-key { width: 19px; display: inline-block; margin-right: 5px; border-top: 3.5px solid #111; vertical-align: middle; }
 .plant-origin-actions { display: flex; align-items: center; gap: 6px; margin-top: 9px; }
@@ -226,6 +227,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .plant-origin-info { margin-top: 6px; }
 .plant-origin-info p { margin: 0; font-size: 0.66rem; line-height: 1.5; color: #5e7367; }
 #plantOriginLabel { display: none; }
+.selected-plant[data-origin-kind="unresolved"] #plantOriginLabel { display: block; }
 .plant-detail { margin-top: 6px; }
 .plant-detail summary { display: flex; justify-content: space-between; gap: 6px; align-items: center; min-height: 36px; color: #587164; font-size: 0.68rem; cursor: pointer; }
 .plant-detail summary > span:last-child::after { content: ' ＋'; }

@@ -90,6 +90,8 @@
     plantSearch: document.getElementById("plantSearch"),
     plantResultCount: document.getElementById("plantResultCount"),
     plantResults: document.getElementById("plantResults"),
+    plantShowMore: document.getElementById("plantShowMore"),
+    plantRelated: document.getElementById("plantRelated"),
     selectedPlant: document.getElementById("selectedPlant"),
     selectedPlantName: document.getElementById("selectedPlantName"),
     selectedPlantScientific: document.getElementById("selectedPlantScientific"),
@@ -222,6 +224,8 @@
     plantVisible: false,
     plantOriginBounds: null,
     plants: [],
+    plantResultKey: null,
+    plantResultLimit: 100,
     plantOutlines: null,
     selectedPlant: null,
     currentRecord: null,
@@ -1042,10 +1046,15 @@
   function renderPlantResults() {
     const query = normalizePlantSearch(elements.plantSearch.value);
     const category = elements.plantCategory.value;
+    const resultKey = `${category}\n${query}`;
+    if (state.plantResultKey !== resultKey) {
+      state.plantResultKey = resultKey;
+      state.plantResultLimit = 100;
+    }
     const plants = state.plants.filter((plant) => plantMatchesCategory(plant, category)
-      && (!query || normalizePlantSearch([plant.name, plant.scientificName, ...plant.aliases].join(" ")).includes(query)));
+      && (!query || plant.searchText.includes(query)));
     const fragment = document.createDocumentFragment();
-    for (const plant of plants) {
+    for (const plant of plants.slice(0, state.plantResultLimit)) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "plant-result";
@@ -1054,7 +1063,7 @@
       const name = document.createElement("strong");
       name.textContent = plant.name;
       const scientific = document.createElement("small");
-      scientific.textContent = plant.scientificName;
+      scientific.textContent = plant.scientificName || "園芸品種・流通名";
       const stars = document.createElement("span");
       stars.className = "plant-result-stars";
       stars.textContent = plantStars(plant);
@@ -1070,7 +1079,9 @@
       fragment.append(button);
     }
     elements.plantResults.replaceChildren(fragment);
-    elements.plantResultCount.textContent = plants.length ? `${plants.length}件 · 選択すると原産地域を表示` : "該当する植物がありません。名前・ジャンルを変えてください。";
+    elements.plantShowMore.hidden = plants.length <= state.plantResultLimit;
+    elements.plantShowMore.textContent = `さらに${Math.max(0, Math.min(100, plants.length - state.plantResultLimit))}件表示`;
+    elements.plantResultCount.textContent = plants.length ? `${plants.length}件${plants.length > state.plantResultLimit ? `（${state.plantResultLimit}件表示）` : ""} · 植物を選ぶと詳細を表示` : "該当する植物がありません。名前・ジャンルを変えてください。";
   }
 
   function updatePlantOrigin() {
@@ -1083,7 +1094,7 @@
     elements.focusPlantOrigin.disabled = !state.plantOriginBounds;
     elements.focusPlantOrigin.hidden = !state.plantOriginBounds;
     document.getElementById("plantOriginCaveat").hidden = !state.plantOriginBounds;
-    elements.plantChoiceState.textContent = visible ? "線を非表示" : state.plantOriginBounds ? "線を表示" : plant?.taxonRank === "horticultural-group" ? "園芸品種群" : "原種未特定";
+    elements.plantChoiceState.textContent = visible ? "線を非表示" : state.plantOriginBounds ? "線を表示" : plant?.taxonRank === "market-name" ? "流通品種" : plant?.taxonRank === "horticultural-group" ? "園芸品種群" : "原種未特定";
     const originLabel = plant?.originKind === "cultigen" ? "栽培化した種の成立地域（目安）" : "原産地域の目安";
     if (visible) {
       const key = document.createElement("span");
@@ -1109,21 +1120,24 @@
       svgElement("path", { d: pathData, class: "plant-origin-outline" }),
     ] : []));
     elements.selectedPlant.hidden = false;
+    elements.selectedPlant.dataset.originKind = plant.originKind;
     elements.plantOriginInfo.hidden = false;
     elements.selectedPlantName.textContent = plant.name;
-    elements.selectedPlantScientific.textContent = plant.scientificName;
+    elements.selectedPlantScientific.textContent = plant.scientificName || "流通名で掲載";
     elements.plantReferenceStars.textContent = plantStars(plant);
     elements.plantReferenceStars.setAttribute("aria-label", `5段階中${plant.reference.stars}`);
     elements.plantReferenceReason.textContent = plant.reference.reason;
-    const kind = plant.taxonRank === "horticultural-group" ? "園芸品種群" : plant.taxonRank === "variety" ? "自然変種" : plant.taxonRank === "subspecies" ? "亜種" : plant.originKind === "cultigen" ? "栽培化した種" : plant.taxonRank === "cultivar" ? "園芸品種（原種未特定）" : "原種・種全体";
+    const kind = plant.taxonRank === "market-name" ? "園芸品種・流通名" : plant.taxonRank === "horticultural-group" ? "園芸品種群" : plant.taxonRank === "variety" ? "自然変種" : plant.taxonRank === "subspecies" ? "亜種" : plant.originKind === "cultigen" ? "栽培化した種" : plant.taxonRank === "cultivar" ? "園芸品種（原種未特定）" : "原種・種全体";
     elements.plantTaxonNote.textContent = `${kind}${plant.note ? " · " + plant.note : ""}`;
     elements.plantSource.href = plant.sourceUrl;
-    elements.plantSource.textContent = plant.taxonRank === "horticultural-group" ? "園芸品種群・栽培の出典：RHS" : plant.originKind === "unresolved" ? "品種名の出典：RHS" : "分布の出典：Kew";
+    elements.plantSource.textContent = plant.taxonRank === "market-name" ? `販売名・品種の出典：${plant.sourceLabel}` : plant.taxonRank === "horticultural-group" ? "園芸品種群・栽培の出典：RHS" : plant.originKind === "unresolved" ? "品種名の出典：RHS" : "分布の出典：Kew";
     elements.plantReferenceSource.href = plant.reference.sourceUrl;
     elements.plantReferenceSource.hidden = plant.reference.sourceUrl === plant.sourceUrl;
     elements.plantOriginLabel.textContent = outline
       ? `黒い太線：${plant.originKind === "cultigen" ? "栽培化した種の成立地域" : "原産地域"}の目安`
-      : plant.taxonRank === "horticultural-group" ? "園芸品種群のため、単一の原産地域の線は表示しません" : "原種未特定のため、原産地域の線は表示しません";
+      : plant.taxonRank === "market-name" ? "園芸品種・流通形には野生の原産地域を設定していません" : plant.taxonRank === "horticultural-group" ? "園芸品種群のため、単一の原産地域の線は表示しません" : "原種未特定のため、原産地域の線は表示しません";
+    elements.plantRelated.hidden = !plant.relatedPlantId;
+    elements.plantRelated.dataset.plantId = plant.relatedPlantId || "";
     updatePlantOrigin();
     // Keep the picker, scroll position and keyboard focus stable for rapid switching.
     elements.plantResults.querySelectorAll("button[data-plant-id]").forEach((button) => {
@@ -1151,11 +1165,11 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      const catalog = await fetchCatalogJSON("./data/plants.json?v=20261025-catalog-5000");
+      const catalog = await fetchCatalogJSON("./data/plants.json?v=20261025-market-catalog");
       const plantFiles = catalog.plantFiles ?? [];
       if (!Array.isArray(plantFiles) || new Set(plantFiles).size !== plantFiles.length
           || plantFiles.some((name) => typeof name !== "string" || !/^plants-(?:[2-9]|[1-9][0-9]+)\.json$/.test(name))) throw new Error("植物カタログファイル名が不正です");
-      const plantChunks = await Promise.all(plantFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=20261025-catalog-5000`)));
+      const plantChunks = await Promise.all(plantFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=20261025-market-catalog`)));
       if (!Array.isArray(catalog.plants) || plantChunks.some((chunk) => chunk.schema !== catalog.schema || !Array.isArray(chunk.plants))) throw new Error("植物カタログ形式が不正です");
       catalog.plants = catalog.plants.concat(...plantChunks.map((chunk) => chunk.plants));
       if ((catalog.plantCount !== undefined && catalog.plantCount !== catalog.plants.length)
@@ -1163,7 +1177,7 @@
       if (!Array.isArray(catalog.outlineFiles) || !catalog.outlineFiles.length
           || new Set(catalog.outlineFiles).size !== catalog.outlineFiles.length
           || catalog.outlineFiles.some((name) => !/^plant-outlines(?:-bulbs|-(?:[3-9]|[1-9][0-9]+))?\.json$/.test(name))) throw new Error("植物分布ファイル名が不正です");
-      const outlineSources = await Promise.all(catalog.outlineFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=20261025-catalog-5000`)));
+      const outlineSources = await Promise.all(catalog.outlineFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=20261025-market-catalog`)));
       if (catalog.schema !== 1 || !Array.isArray(catalog.plants) || !Array.isArray(catalog.categories)
           || outlineSources.some((source) => source.schema !== 1 || !source.outlines || !source.plantKeys
             || source.sourceSha256 !== catalog.regionSource?.sha256)) throw new Error("植物データ形式が不正です");
@@ -1172,6 +1186,7 @@
         outlines: Object.assign({}, ...outlineSources.map((source) => source.outlines)),
       };
       const categoryIds = new Set(catalog.categories.map((category) => category.id));
+      const plantsById = new Map(catalog.plants.map((plant) => [plant.id, plant]));
       for (const plant of catalog.plants) {
         if (typeof plant.id !== "string" || !plant.id || !plant.name || !Array.isArray(plant.aliases)
             || !categoryIds.has(plant.category)
@@ -1180,7 +1195,15 @@
               || new Set(plant.additionalCategories).size !== plant.additionalCategories.length))
             || !Number.isInteger(plant.reference?.stars) || plant.reference.stars < 1 || plant.reference.stars > 5
             || !plant.reference.reason || !/^https:\/\//.test(plant.sourceUrl) || !/^https:\/\//.test(plant.reference.sourceUrl)
-            || (plant.regionCodes.length && !outlines.outlines[outlines.plantKeys[plant.id]])) throw new Error("植物の分布・参考度が不足しています");
+            || !Array.isArray(plant.regionCodes) || !Array.isArray(plant.nativeAreas)
+            || (plant.regionCodes.length && !outlines.outlines[outlines.plantKeys[plant.id]])
+            || (plant.taxonRank === "market-name" && (plant.originKind !== "unresolved"
+              || plant.regionCodes.length || plant.nativeAreas.length || outlines.plantKeys[plant.id]
+              || plant.reference.stars > 2 || !plant.sourceLabel))
+            || (plant.relatedPlantId && (plant.relatedPlantId === plant.id
+              || !plantsById.get(plant.relatedPlantId)?.regionCodes?.length
+              || !/^https:\/\//.test(plant.relatedEvidenceUrl)))) throw new Error("植物の分布・参考度が不足しています");
+        plant.searchText = normalizePlantSearch([plant.name, plant.scientificName, ...plant.aliases].join(" "));
       }
       state.plants = catalog.plants;
       state.plantOutlines = outlines;
@@ -2949,6 +2972,11 @@
   elements.focusPlantOrigin.addEventListener("click", focusPlantOrigin);
   elements.plantCategory.addEventListener("change", renderPlantResults);
   elements.plantSearch.addEventListener("input", renderPlantResults);
+  elements.plantShowMore.addEventListener("click", () => {
+    state.plantResultLimit += 100;
+    renderPlantResults();
+  });
+  elements.plantRelated.addEventListener("click", () => selectPlant(elements.plantRelated.dataset.plantId));
   elements.plantResults.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-plant-id]");
     if (button && elements.plantResults.contains(button)) selectPlant(button.dataset.plantId);
