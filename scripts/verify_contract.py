@@ -524,7 +524,7 @@ def verify_plant_catalog(app: str) -> None:
     require(catalog['regionSource']['sha256'] == outlines['sourceSha256'], 'plant boundary source mismatch')
     require(catalog['ratingMethod']['kind'] == 'editorial-provisional', 'rating method missing')
     expected = {'tropical','vegetables','annuals','perennials','trees','australian','succulents','caudex','tillandsia','bulbs','fruits','herbs','orchids','ferns','aquatic','carnivorous','bonsai'}
-    require(catalog['checkedAt'] == '2026-10-25', 'catalog update date missing')
+    require(catalog['checkedAt'] == '2026-10-27', 'catalog update date missing')
     require(len(plants) >= 10000 and len({p['id'] for p in plants}) == len(plants), 'plant count or duplicate ID')
     require({c['id'] for c in catalog['categories']} == expected, 'plant categories mismatch')
     optional = {'name','aliases','additionalCategories','marketEvidence'}
@@ -540,11 +540,16 @@ def verify_plant_catalog(app: str) -> None:
         'https://e-mizukusa.com/', 'https://www.akb.jp/c/', 'https://touhou-en.ocnk.net/product/',
         'https://www.baranoie.com/shopdetail/', 'https://koketane.base.shop/items/',
         'https://yoshunen.shop-pro.jp/', 'https://sakata-netshop.com/shop/g/',
-        'https://store.shopping.yahoo.co.jp/hiros-pitcherplants/')
+        'https://store.shopping.yahoo.co.jp/hiros-pitcherplants/',
+        'https://green-rocket.jp/item/', 'https://green-netbox.com/pe-zi/syouhin/',
+        'https://www.kokkaen-ec.jp/products/detail/', 'https://www.greendego.jp/SHOP/',
+        'https://greensnap.co.jp/', 'https://www.hanahiroba.com/c/',
+        'https://item.rakuten.co.jp/peteco-thegarden/', 'https://item.rakuten.co.jp/chanet3980/',
+        'https://ofg-web-shop.com/?pid=')
     additions = plants[5000:]
-    require(all(p['checkedAt'] == '2026-10-25' and p.get('marketEvidence')
+    require(all(p['checkedAt'] in ('2026-10-25','2026-10-26','2026-10-27') and p.get('marketEvidence')
                 and all(e['url'].startswith(market_sources) and e['sourceLabel']
-                        and e['checkedAt'] == '2026-10-25' for e in p['marketEvidence'])
+                        and e['checkedAt'] in ('2026-10-25','2026-10-26','2026-10-27') for e in p['marketEvidence'])
                 for p in additions), 'new entries need directly linked retail identity evidence')
     require(all(p['taxonRank'] == 'market-name' or
                 (p['originKind'] == 'native' and p['taxonRank'] in ('species','variety','subspecies')
@@ -572,7 +577,7 @@ def verify_plant_catalog(app: str) -> None:
     for plant in plants:
         require(plant['taxonRank'] in ('species','variety','subspecies','cultivar','horticultural-group','market-name'), 'invalid taxon rank')
         require(plant['originKind'] in ('native','cultigen','unresolved'), 'invalid origin kind')
-        require(plant['checkedAt'] in ('2026-10-25','2026-10-06','2026-09-26'), 'source check date missing')
+        require(plant['checkedAt'] in ('2026-10-27','2026-10-26','2026-10-25','2026-10-06','2026-09-26'), 'source check date missing')
         additional = plant.get('additionalCategories', [])
         require(isinstance(additional, list) and len(additional) == len(set(additional))
                 and set(additional) <= set(expected) - {plant['category']}, 'invalid additional genre')
@@ -724,7 +729,7 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261025-market-catalog\" defer></script>" in index, "versioned local deferred script missing")
+    require("<script src=\"./app.js?v=20261027-catalog-43000\" defer></script>" in index, "versioned local deferred script missing")
     require('href="./styles.css?v=20261025-market-catalog"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
