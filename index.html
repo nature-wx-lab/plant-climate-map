@@ -18,7 +18,7 @@
   <meta name="twitter:card" content="summary">
   <title>植物気候マップ｜Nature Wx Lab</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2318675b'/%3E%3Cpath d='M32 51V28M32 35C19 34 14 25 14 14c12 0 20 6 18 21zm0-2c13-1 18-10 18-21-12 0-20 6-18 21z' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css?v=20261025-market-catalog">
+  <link rel="stylesheet" href="./styles.css?v=20261110-compact-footer">
   <script src="./vendor/d3-array-3.2.4.min.js" defer></script>
   <script src="./vendor/d3-geo-3.1.1.min.js" defer></script>
   <script src="./geography.js?v=20261003-label-spacing" defer></script>
@@ -424,22 +424,25 @@
     </section>
   </main>
 
-  <footer>
+  <footer class="site-footer">
     <section>
       <h2>データと利用上の注意</h2>
-      <p>日本の気温（平均・最高・最低）・降水量・日射量は、<a href="https://www.jma.go.jp/" target="_blank" rel="noopener noreferrer">気象庁</a>の日別平年値と既存の月別1kmメッシュを基にした1991–2020年の独自推定値です。日本の相対湿度は1991–2020年の観測所の日平均値と公式の月別平年値から独自推定した約1km値です。いずれも気象庁が公表する公式の1km日別平年値ではありません。地図の広域表示は概要画像で、拡大時には1km格子の値を再描画します。観測所から遠く推定できない格子は欠測とし、NASA値では埋めません。</p>
-      <p>日本以外の気候データ：<a href="https://power.larc.nasa.gov/" target="_blank" rel="noopener noreferrer">NASA Langley Research Center POWER Project</a>。全球分布図は公開AWS Zarrの月別データから独自集計し、地点詳細はClimatology API / Daily APIから取得しています。降水量は日平均量に各月・年の日数を掛けて月降水量・年降水量へ換算しています。NASAは本ツールを承認または推奨するものではありません。</p>
-      <p>地図の枠（地点Aは青・比較Bは橙）は、日本の有効なメッシュ内では約1kmの3次メッシュ、日本以外ではNASA POWER気象格子の中心に合わせた約0.5°×0.625°の範囲です。白い小点は格子中心です。日本以外の気温・降水量・相対湿度は選択した枠に対応する元格子の空間平均です。日射量は同じ中心点に対応する別の1°×1°格子です。日本の湿度は独自推定の約1km値です。</p>
-      <p>気候区分：<a href="https://doi.org/10.6084/m9.figshare.c.6395666" target="_blank" rel="noopener noreferrer">Beckほか（2023）ケッペン＝ガイガー気候区分</a>の1991–2020年・0.1°版（CC0）をWebメルカトルへ再投影しています。区分境界付近には不確実性があります。</p>
-      <p>地図境界・国名・周辺都市：<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener noreferrer">Natural Earth</a> 1:50m Admin 0 Countries / 1:10m Populated Places Simple v5.1.2（Public Domain）。格子中心が属する国・地域と、主要都市・行政中心点からの概算位置を表示します。行政区画の判定ではなく、境界・名称表示は法的立場を示すものではありません。</p>
-      <p>詳細地図・航空写真・地形：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">国土地理院 地理院タイル</a>。日本の地形カラーは色別標高図、海外は全球DEMを独自に色分けし全球陰影起伏図を重ねています。表示範囲の画像だけを取得します。海外の画像は広域用で、拡大しても細部は増えません。航空写真は最新の現況を保証しません。</p>
-      <details class="map-source-credits"><summary>地図画像の原典・クレジット</summary><p>海底地形：GEBCO, BODC on behalf of IOC and IHO (2003)／海上保安庁許可 第292502号。世界の海岸線：米国NIMA VMAP0（地理院タイル）。衛星画像：NASA LP DAAC / USGS EROS、Landsat 8 (GSI, TSIC, GEO Grid/AIST), USGS。GRUS画像：© Axelspace。色別標高図の海域部は海上保安庁海洋情報部の資料を使用して作成。</p></details>
-      <p>本ツールは広域の気候傾向を確認する試作版です。日本の約1kmは格子の大きさであり、実測精度を意味しません。特に日射は利用できる観測所が少なく、地形・沿岸・都市の細かな差も再現しません。栽培可否の断定には使用しないでください。</p>
+      <p>1991–2020年の気候平均です。日本は<a href="https://www.jma.go.jp/" target="_blank" rel="noopener noreferrer">気象庁</a>資料を基にした約1kmの独自推定、日本以外は<a href="https://power.larc.nasa.gov/" target="_blank" rel="noopener noreferrer">NASA POWER</a>を使用しています。栽培環境を考える目安としてお使いください。</p>
     </section>
     <section>
       <h2>プライバシー</h2>
-      <p>Cookie、アクセス解析、現在地取得、入力情報の保存は行いません。比較基準はページを開いている間だけ保持し、再読み込みで消去されます。日本のメッシュをクリックしてもNASA POWERへは接続しません。詳細地図・航空写真・地形を有効にすると、表示範囲のタイル番号と通常の通信情報が国土地理院へ送信されます。日本以外の地点をクリックすると、気象格子の中心座標と通常の通信情報がNASA POWERへ送信されます。</p>
+      <p>Cookie、アクセス解析、現在地取得、入力情報の保存は行いません。日本以外の地点選択時は格子中心座標をNASA POWERへ送信し、詳細地図・航空写真・地形の表示時はタイル番号を国土地理院へ送信します。いずれも通常の通信情報が伴います。</p>
     </section>
+    <details>
+      <summary>出典とデータの詳細</summary>
+      <p>日本の約1kmは格子の大きさです。表示値は公式の1km日別平年値ではありません。推定できない格子は欠測です。</p>
+      <p>日本以外の気温・降水量・相対湿度は選択した枠に対応する元格子の空間平均（約0.5°×0.625°）です。日射量は同じ中心点に対応する別の1°×1°格子を使います。降水量は日平均量に各月・年の日数を掛けて集計します。NASAは本ツールを承認・推奨していません。</p>
+      <p>気候区分は<a href="https://doi.org/10.6084/m9.figshare.c.6395666" target="_blank" rel="noopener noreferrer">Beckほか（2023）のケッペン＝ガイガー気候区分</a>の1991–2020年・0.1°版（CC0）を再投影しています。境界付近には不確実性があります。</p>
+      <p>境界・地名は<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener noreferrer">Natural Earth</a>（1:50m Admin 0 Countries / 1:10m Populated Places Simple v5.1.2、Public Domain）を使用しています。境界・名称は法的立場を示すものではありません。</p>
+      <p>詳細地図・航空写真・地形には<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">地理院タイル</a>を使用しています。航空写真は撮影時点の画像です。</p>
+      <p>海底地形：GEBCO, BODC on behalf of IOC and IHO (2003)／海上保安庁許可 第292502号。世界の海岸線：米国NIMA VMAP0（地理院タイル）。衛星画像：NASA LP DAAC / USGS EROS、Landsat 8 (GSI, TSIC, GEO Grid/AIST), USGS。GRUS画像：© Axelspace。色別標高図の海域部は海上保安庁海洋情報部の資料を使用して作成。</p>
+      <p>日本のメッシュをクリックしてもNASA POWERへは接続しません。比較基準は再読み込みで消去されます。</p>
+    </details>
   </footer>
 </body>
 </html>

@@ -1240,27 +1240,33 @@ th small { color: #71827e; font-size: 0.5rem; font-weight: 600; }
   font-weight: 800;
 }
 
-footer {
+.site-footer {
   width: min(1440px, 100%);
   margin: 0 auto;
-  padding: 22px clamp(16px, 3vw, 36px) 34px;
+  padding: 10px clamp(12px, 2vw, 28px) 12px;
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  border-top: 1px solid var(--line);
   color: var(--muted);
   background: var(--paper);
-  font-size: 0.72rem;
-  line-height: 1.6;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
-footer section {
-  padding-top: 13px;
-  border-top: 1px solid var(--line);
+.site-footer h2 { margin: 0 0 2px; color: var(--ink); font-size: 0.81rem; }
+.site-footer p { margin: 0; }
+.site-footer p + p { margin-top: 4px; }
+
+.site-footer summary {
+  width: fit-content;
+  padding: 2px 0;
+  color: var(--green-dark);
+  cursor: pointer;
 }
 
-footer h2 { margin: 0 0 4px; color: var(--ink); font-size: 0.82rem; }
-footer p { margin: 0; }
-footer p + p { margin-top: 5px; }
+.site-footer details[open] summary { margin-bottom: 4px; }
 
 @media (max-width: 760px) {
   .topbar {
@@ -1406,11 +1412,6 @@ footer p + p { margin-top: 5px; }
     border: 1px solid rgba(61, 91, 85, 0.35);
     border-radius: 999px;
   }
-
-  footer {
-    grid-template-columns: 1fr;
-    padding: 18px 12px 24px;
-  }
 }
 
 @media (max-width: 420px) {
@@ -1524,7 +1525,6 @@ footer p + p { margin-top: 5px; }
 .map-attribution { position: absolute; z-index: 4; left: 12px; bottom: 48px; max-width: calc(100% - 280px); padding: 3px 6px; border-radius: 3px; background: #fffffff0; color: #39534e; font-size: .6rem; line-height: 1.4; }
 .map-attribution a { color: inherit; }
 .map-attribution span { margin-left: 5px; }
-.map-source-credits { margin-top: 5px; font-size: .7rem; }
 @media (max-width: 700px) { .map-attribution, .globe-mode .map-attribution { left: 8px; bottom: 174px; max-width: calc(100% - 16px); } }
 
 /* Let the charts use the height freed by the compact result controls. */
