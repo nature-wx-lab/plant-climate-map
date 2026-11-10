@@ -18,13 +18,13 @@
   <meta name="twitter:card" content="summary">
   <title>植物気候マップ｜Nature Wx Lab</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2318675b'/%3E%3Cpath d='M32 51V28M32 35C19 34 14 25 14 14c12 0 20 6 18 21zm0-2c13-1 18-10 18-21-12 0-20 6-18 21z' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css?v=20261110-compact-footer">
+  <link rel="stylesheet" href="./styles.css?v=20261110-plant-pickup">
   <script src="./vendor/d3-array-3.2.4.min.js" defer></script>
   <script src="./vendor/d3-geo-3.1.1.min.js" defer></script>
   <script src="./geography.js?v=20261003-label-spacing" defer></script>
   <script src="./globe.js?v=20261014-globe-space" defer></script>
   <script src="./map-context.js?v=20261003-context-maps" defer></script>
-  <script src="./app.js?v=20261027-catalog-43000" defer></script>
+  <script src="./app.js?v=20261110-plant-pickup" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -80,7 +80,7 @@
           <summary id="plantPickerHeading">植物一覧 <small id="plantCatalogCount">読込中</small></summary>
           <div class="plant-filters">
             <label class="search-field" for="plantSearch"><span class="sr-only">名前・学名で検索</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><input id="plantSearch" type="search" placeholder="植物名・学名で検索" autocomplete="off" disabled></label>
-            <label class="category-field" for="plantCategory"><span>ジャンル</span><select id="plantCategory" disabled><option value="all">すべて</option></select></label>
+            <label class="category-field" for="plantCategory"><span>ジャンル</span><select id="plantCategory" disabled><option value="pickup">おすすめピックアップ</option><option value="all">すべて</option></select></label>
           </div>
           <p id="plantResultCount" class="plant-result-count" role="status">植物データを読み込んでいます</p>
           <div id="plantResults" class="plant-results" aria-label="植物の検索結果"></div>

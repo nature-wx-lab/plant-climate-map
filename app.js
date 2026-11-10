@@ -51,6 +51,258 @@
   const FILL_VALUE = -999;
   const JAPAN_MISSING = -32768;
   const JAPAN_GRID_ROOT = "./data/japan-1km";
+  // The pickup is an editorial view of the catalog, with familiar labels and gardening-use groups.
+  const PLANT_PICKUP_GROUPS = {
+    "tropical": [
+      ["monstera-deliciosa", "モンステラ"],
+      ["epipremnum-aureum", "ポトス"],
+      ["pachira-aquatica", "パキラ"],
+      ["ficus-altissima", "フィカス・アルテシマ"],
+      ["dracaena-trifasciata", "サンスベリア"],
+      ["chamaedorea-elegans", "テーブルヤシ"],
+      ["ficus-microcarpa", "ガジュマル"],
+      ["coffea-arabica", "コーヒーの木（アラビカ）"],
+      ["strelitzia-reginae", "ストレリチア（レギネ・極楽鳥花）"],
+      ["beaucarnea-recurvata", "トックリラン（ノリナ）"],
+      ["heptapleurum-arboricola", "ホンコンカポック"],
+      ["cojoba-arborea-var-angustifolia", "エバーフレッシュ"],
+      ["muehlenbeckia-complexa", "ワイヤープランツ"],
+      ["ficus-umbellata", "フィカス・ウンベラータ"],
+      ["yucca-gigantea", "ユッカ（青年の木）"],
+      ["strelitzia-nicolai", "オーガスタ"],
+      ["dracaena-fragrans", "幸福の木（フラグランス原種）"],
+      ["hedera-helix", "アイビー（ヘデラ・ヘリックス）"],
+      ["philodendron-bipinnatifidum", "フィロデンドロン（セローム）"],
+      ["alocasia-odora", "クワズイモ"],
+      ["chrysalidocarpus-lutescens", "アレカヤシ"],
+      ["chlorophytum-comosum", "オリヅルラン"],
+      ["spathiphyllum-wallisii", "スパティフィラム（ワリシー）"]
+    ],
+    "vegetables": [
+      ["solanum-lycopersicum", "トマト"],
+      ["solanum-melongena", "ナス"],
+      ["cucumis-sativus", "キュウリ"],
+      ["capsicum-annuum", "トウガラシ"],
+      ["abelmoschus-esculentus", "オクラ"],
+      ["spinacia-oleracea", "ホウレンソウ"],
+      ["ipomoea-batatas", "サツマイモ"],
+      ["zingiber-mioga", "ミョウガ"],
+      ["momordica-charantia", "ゴーヤ"],
+      ["allium-tuberosum", "ニラ"],
+      ["asparagus-officinalis", "アスパラガス（食用）"]
+    ],
+    "annuals": [
+      ["helianthus-annuus", "ヒマワリ"],
+      ["cosmos-bipinnatus", "コスモス"],
+      ["nemophila-menziesii", "ネモフィラ"],
+      ["tagetes-erecta", "マリーゴールド"],
+      ["zinnia-elegans", "ヒャクニチソウ"],
+      ["petunia-axillaris", "ペチュニア（原種）"],
+      ["impatiens-balsamina", "ホウセンカ"],
+      ["portulaca-grandiflora", "マツバボタン"],
+      ["nigella-damascena", "ニゲラ"],
+      ["gomphrena-globosa", "センニチコウ"],
+      ["centaurea-cyanus", "ヤグルマギク"],
+      ["papaver-rhoeas", "ヒナゲシ（シャーレーポピー）"],
+      ["callistephus-chinensis", "アスター（エゾギク）"],
+      ["cosmos-sulphureus", "キバナコスモス"],
+      ["lathyrus-odoratus", "スイートピー"],
+      ["catharanthus-roseus", "ニチニチソウ"],
+      ["antirrhinum-majus", "キンギョソウ"],
+      ["celosia-argentea", "ケイトウ"],
+      ["torenia-fournieri", "トレニア"],
+      ["linaria-maroccana", "リナリア（ヒメキンギョソウ）"]
+    ],
+    "perennials": [
+      ["phlox-subulata", "シバザクラ"],
+      ["platycodon-grandiflorus", "キキョウ"],
+      ["helleborus-niger", "クリスマスローズ（ニゲル）"],
+      ["hosta-sieboldiana", "ギボウシ（オオバギボウシ）"],
+      ["paeonia-lactiflora", "シャクヤク"],
+      ["echinacea-purpurea", "エキナセア"],
+      ["clematis-florida", "クレマチス（テッセン）"],
+      ["stachys-byzantina", "ラムズイヤー"],
+      ["phlox-paniculata", "宿根フロックス（クサキョウチクトウ）"],
+      ["oenothera-lindheimeri", "ガウラ（ハクチョウソウ）"],
+      ["farfugium-japonicum", "ツワブキ"],
+      ["gypsophila-paniculata", "宿根カスミソウ"],
+      ["campanula-persicifolia", "カンパニュラ（モモバキキョウ）"],
+      ["salvia-leucantha", "アメジストセージ"],
+      ["rudbeckia-fulgida", "宿根ルドベキア（フルギダ）"],
+      ["tricyrtis-hirta", "ホトトギス（ヒルタ）"],
+      ["campanula-punctata", "ホタルブクロ"],
+      ["saxifraga-stolonifera", "ユキノシタ"],
+      ["gerbera-jamesonii", "原種ガーベラ（ヤメソニー）"],
+      ["ophiopogon-japonicus", "リュウノヒゲ（ジャノヒゲ）"]
+    ],
+    "bulbs": [
+      ["tulipa-tarda", "チューリップ（原種タルダ）"],
+      ["narcissus-pseudonarcissus", "スイセン（ラッパズイセン）"],
+      ["hyacinthus-orientalis", "ヒヤシンス"],
+      ["muscari-armeniacum", "ムスカリ（アルメニアカム）"],
+      ["lilium-longiflorum", "テッポウユリ"],
+      ["lilium-auratum", "ヤマユリ"],
+      ["lycoris-radiata", "ヒガンバナ"],
+      ["cyclamen-hederifolium", "原種シクラメン（ヘデリフォリウム）"],
+      ["galanthus-elwesii", "スノードロップ（エルウェシー）"],
+      ["ipheion-uniflorum", "ハナニラ"],
+      ["lilium-lancifolium", "オニユリ"],
+      ["cyclamen-coum", "原種シクラメン（コウム）"],
+      ["narcissus-papyraceus", "スイセン（ペーパーホワイト）"],
+      ["cyclamen-persicum", "シクラメン（ペルシカム原種）"],
+      ["leucojum-aestivum", "スノーフレーク（スズランスイセン）"],
+      ["anemone-coronaria", "アネモネ（コロナリア）"],
+      ["ranunculus-asiaticus", "ラナンキュラス（アジアティクス）"]
+    ],
+    "trees": [
+      ["hydrangea-macrophylla", "アジサイ（ガクアジサイ由来）"],
+      ["camellia-japonica", "ツバキ（ヤブツバキ）"],
+      ["osmanthus-fragrans", "キンモクセイ"],
+      ["prunus-sargentii", "サクラ（オオヤマザクラ）"],
+      ["cornus-florida", "ハナミズキ"],
+      ["enkianthus-perulatus", "ドウダンツツジ"],
+      ["rosa-multiflora", "ノイバラ"],
+      ["chimonanthus-praecox", "ロウバイ"],
+      ["magnolia-denudata", "ハクモクレン"],
+      ["cornus-kousa", "ヤマボウシ（落葉性）"],
+      ["rosa-banksiae", "モッコウバラ"],
+      ["hydrangea-serrata", "ヤマアジサイ"],
+      ["jasminum-polyanthum", "ハゴロモジャスミン"],
+      ["rosa-rugosa", "ハマナス"],
+      ["styrax-japonicus", "エゴノキ"],
+      ["wisteria-floribunda", "フジ（ノダフジ）"],
+      ["camellia-sasanqua", "サザンカ"],
+      ["spiraea-thunbergii", "ユキヤナギ"],
+      ["spiraea-cantoniensis", "コデマリ"],
+      ["kerria-japonica", "ヤマブキ"],
+      ["hydrangea-quercifolia", "カシワバアジサイ"],
+      ["hydrangea-paniculata", "ノリウツギ"],
+      ["syringa-vulgaris", "ライラック（セイヨウハシドイ）"],
+      ["gardenia-jasminoides", "クチナシ"],
+      ["fatsia-japonica", "ヤツデ"],
+      ["pieris-japonica", "アセビ"],
+      ["spiraea-japonica", "シモツケ"],
+      ["deutzia-crenata", "ウツギ"],
+      ["hibiscus-syriacus", "ムクゲ"],
+      ["magnolia-kobus", "コブシ"],
+      ["stewartia-pseudocamellia", "ナツツバキ（シャラ）"],
+      ["edgeworthia-chrysantha", "ミツマタ"],
+      ["osmanthus-heterophyllus", "ヒイラギ"],
+      ["rhododendron-japonicum", "レンゲツツジ"],
+      ["forsythia-suspensa", "レンギョウ"],
+      ["chaenomeles-speciosa", "ボケ"],
+      ["daphne-odora", "ジンチョウゲ"],
+      ["prunus-speciosa", "オオシマザクラ"],
+      ["viburnum-plicatum", "オオデマリ"]
+    ],
+    "australian": [
+      ["acacia-baileyana", "ミモザ（ギンヨウアカシア）"],
+      ["eucalyptus-polyanthemos", "ユーカリ（ポポラス）"],
+      ["eucalyptus-gunnii", "ユーカリ（グニー）"],
+      ["melaleuca-citrina", "ブラシノキ（キンポウジュ）"],
+      ["banksia-integrifolia", "バンクシア・インテグリフォリア"],
+      ["leptospermum-scoparium", "ギョリュウバイ"],
+      ["backhousia-citriodora", "レモンマートル"],
+      ["actinotus-helianthi", "フランネルフラワー"],
+      ["westringia-fruticosa", "ウエストリンギア"],
+      ["melaleuca-linariifolia", "メラレウカ（スノーインサマー）"]
+    ],
+    "succulents": [
+      ["aloe-vera", "アロエ・ベラ"],
+      ["crassula-ovata", "カネノナルキ"],
+      ["agave-potatorum", "アガベ（雷神）"],
+      ["echeveria-secunda", "エケベリア（セクンダ）"],
+      ["curio-rowleyanus", "グリーンネックレス"],
+      ["haworthia-retusa", "ハオルチア（寿・レツーサ）"],
+      ["agave-attenuata", "アガベ（アテヌアータ）"],
+      ["agave-parryi", "アガベ（パリー）"],
+      ["kalanchoe-tomentosa", "カランコエ（月兎耳）"],
+      ["echeveria-pulidonis", "エケベリア（花うらら）"],
+      ["kalanchoe-blossfeldiana", "カランコエ（ベニベンケイ原種）"]
+    ],
+    "caudex": [
+      ["pachypodium-rosulatum-subsp-gracilius", "パキポディウム・グラキリス"],
+      ["adenium-obesum", "アデニウム・オベスム"],
+      ["dioscorea-elephantipes", "亀甲竜"],
+      ["dioscorea-mexicana", "メキシコ亀甲竜"]
+    ],
+    "tillandsia": [
+      ["tillandsia-xerographica", "キセログラフィカ"],
+      ["tillandsia-bulbosa", "ブルボーサ"],
+      ["tillandsia-ionantha", "イオナンタ"],
+      ["tillandsia-usneoides", "ウスネオイデス"],
+      ["tillandsia-butzii", "ブッツィー"]
+    ],
+    "fruits": [
+      ["olea-europaea", "オリーブ"],
+      ["mangifera-indica", "マンゴー"],
+      ["persea-americana", "アボカド"],
+      ["ficus-carica", "イチジク"],
+      ["vaccinium-corymbosum", "ブルーベリー（ハイブッシュ系の原種）"],
+      ["prunus-mume", "ウメ"],
+      ["eriobotrya-japonica", "ビワ"],
+      ["vitis-vinifera", "ヨーロッパブドウ"],
+      ["diospyros-kaki", "カキ"],
+      ["punica-granatum", "ザクロ"],
+      ["prunus-avium", "サクランボ（甘果・セイヨウミザクラ）"],
+      ["feijoa-sellowiana", "フェイジョア"],
+      ["pyrus-pyrifolia", "ニホンナシ"],
+      ["vaccinium-macrocarpon", "クランベリー（大実種）"]
+    ],
+    "herbs": [
+      ["salvia-rosmarinus", "ローズマリー"],
+      ["lavandula-angustifolia", "ラベンダー（イングリッシュ）"],
+      ["ocimum-basilicum", "バジル"],
+      ["mentha-suaveolens", "ミント（アップルミント）"],
+      ["thymus-vulgaris", "タイム"],
+      ["chamaemelum-nobile", "ローマンカモミール"],
+      ["coriandrum-sativum", "パクチー（コリアンダー）"],
+      ["matricaria-chamomilla", "ジャーマンカモミール"],
+      ["salvia-officinalis", "コモンセージ"]
+    ],
+    "orchids": [
+      ["phalaenopsis-amabilis", "コチョウラン（アマビリス原種）"]
+    ],
+    "ferns": [
+      ["platycerium-bifurcatum", "ビカクシダ（ビフルカツム）"],
+      ["adiantum-raddianum", "アジアンタム"],
+      ["selaginella-tamariscina", "イワヒバ"]
+    ],
+    "aquatic": [
+      ["nelumbo-nucifera", "ハス"],
+      ["nymphaea-rubra", "熱帯スイレン（ルブラ）"],
+      ["iris-laevigata", "カキツバタ"],
+      ["iris-ensata", "ハナショウブ（ノハナショウブを含む種）"],
+      ["acorus-gramineus", "セキショウ"]
+    ],
+    "carnivorous": [
+      ["dionaea-muscipula", "ハエトリソウ"],
+      ["nepenthes-ampullaria", "ウツボカズラ（アンプラリア）"],
+      ["drosera-rotundifolia", "モウセンゴケ"]
+    ],
+    "bonsai": [
+      ["pinus-densiflora", "アカマツ"],
+      ["acer-buergerianum", "トウカエデ"],
+      ["zelkova-serrata", "ケヤキ"],
+      ["rhododendron-indicum", "サツキ"],
+      ["rohdea-japonica", "オモト"]
+    ]
+  };
+  const PLANT_PICKUP_LEAD = [
+    "nemophila-menziesii",
+    "hydrangea-macrophylla",
+    "olea-europaea",
+    "dionaea-muscipula",
+    "monstera-deliciosa",
+    "abelmoschus-esculentus",
+    "acacia-baileyana",
+    "curio-rowleyanus",
+    "cyclamen-hederifolium",
+    "nelumbo-nucifera"
+  ];
+  const pickupById = new Map(Object.entries(PLANT_PICKUP_GROUPS).flatMap(([category, entries]) =>
+    entries.map(([id, name]) => [id, { category, name }])));
+  const pickupOrder = [...new Set([...PLANT_PICKUP_LEAD, ...pickupById.keys()])];
   const KOPPEN_CLASSES = [
     ["Af", "熱帯雨林"], ["Am", "熱帯モンスーン"], ["Aw", "サバナ"],
     ["BWh", "高温砂漠"], ["BWk", "低温砂漠"], ["BSh", "高温ステップ"], ["BSk", "低温ステップ"],
@@ -224,6 +476,8 @@
     plantVisible: false,
     plantOriginBounds: null,
     plants: [],
+    pickupPlants: [],
+    plantCategoryFollowsSearch: true,
     plantResultKey: null,
     plantResultLimit: 100,
     plantOutlines: null,
@@ -1051,7 +1305,9 @@
       state.plantResultKey = resultKey;
       state.plantResultLimit = 100;
     }
-    const plants = state.plants.filter((plant) => plantMatchesCategory(plant, category)
+    const pickup = category === "pickup";
+    const candidates = pickup ? state.pickupPlants : state.plants;
+    const plants = candidates.filter((plant) => (pickup || plantMatchesCategory(plant, category))
       && (!query || plant.searchText.includes(query)));
     const fragment = document.createDocumentFragment();
     for (const plant of plants.slice(0, state.plantResultLimit)) {
@@ -1059,9 +1315,11 @@
       button.type = "button";
       button.className = "plant-result";
       button.dataset.plantId = plant.id;
+      button.dataset.category = pickup ? pickupById.get(plant.id).category
+        : category === "all" ? plant.category : category;
       button.setAttribute("aria-pressed", String(state.selectedPlant?.id === plant.id));
       const name = document.createElement("strong");
-      name.textContent = plant.name;
+      name.textContent = pickup ? pickupById.get(plant.id).name : plant.name;
       const scientific = document.createElement("small");
       scientific.textContent = plant.scientificName || "園芸品種・流通名";
       const stars = document.createElement("span");
@@ -1108,8 +1366,10 @@
   }
 
   function selectPlant(id) {
-    const plant = state.plants.find((candidate) => candidate.id === id);
-    if (!plant) return;
+    const catalogPlant = state.plants.find((candidate) => candidate.id === id);
+    if (!catalogPlant) return;
+    const pickupName = elements.plantCategory.value === "pickup" ? pickupById.get(id)?.name : null;
+    const plant = pickupName ? { ...catalogPlant, name: pickupName } : catalogPlant;
     const outline = state.plantOutlines.outlines[state.plantOutlines.plantKeys[id]];
     state.selectedPlant = plant;
     state.plantOriginBounds = outline ? nativeBounds([{ geometry: { coordinates: outline.rings } }]) : null;
@@ -1203,11 +1463,14 @@
             || (plant.relatedPlantId && (plant.relatedPlantId === plant.id
               || !plantsById.get(plant.relatedPlantId)?.regionCodes?.length
               || !/^https:\/\//.test(plant.relatedEvidenceUrl)))) throw new Error("植物の分布・参考度が不足しています");
-        plant.searchText = normalizePlantSearch([plant.name, plant.scientificName, ...plant.aliases].join(" "));
+        plant.searchText = normalizePlantSearch([plant.name, plant.scientificName, ...plant.aliases, pickupById.get(plant.id)?.name].join(" "));
       }
       state.plants = catalog.plants;
+      state.pickupPlants = pickupOrder.map((id) => plantsById.get(id)).filter(Boolean);
       state.plantOutlines = outlines;
-      elements.plantCategory.options[0].textContent = `すべて（${catalog.plants.length}）`;
+      elements.plantCategory.options[0].textContent = `おすすめピックアップ（${state.pickupPlants.length}）`;
+      elements.plantCategory.options[1].textContent = `すべて（${catalog.plants.length}）`;
+      elements.plantCategory.value = "pickup";
       for (const category of catalog.categories) {
         const option = document.createElement("option");
         option.value = category.id;
@@ -2970,8 +3233,16 @@
     updatePlantOrigin();
   });
   elements.focusPlantOrigin.addEventListener("click", focusPlantOrigin);
-  elements.plantCategory.addEventListener("change", renderPlantResults);
-  elements.plantSearch.addEventListener("input", renderPlantResults);
+  elements.plantCategory.addEventListener("change", () => {
+    state.plantCategoryFollowsSearch = false;
+    renderPlantResults();
+  });
+  elements.plantSearch.addEventListener("input", () => {
+    if (state.plantCategoryFollowsSearch) {
+      elements.plantCategory.value = normalizePlantSearch(elements.plantSearch.value) ? "all" : "pickup";
+    }
+    renderPlantResults();
+  });
   elements.plantShowMore.addEventListener("click", () => {
     state.plantResultLimit += 100;
     renderPlantResults();

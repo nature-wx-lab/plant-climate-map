@@ -202,14 +202,31 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .plant-show-more { width: 100%; min-height: 30px; margin-top: 4px; border: 1px solid #c5d4cd; border-radius: 4px; background: #f5f8f6; color: #254d3d; font: inherit; font-size: 0.72rem; cursor: pointer; }
 .plant-results { overflow-anchor: none; max-height: max(180px, calc(100svh - 294px)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; border-top: 1px solid #e3ebe7; border-bottom: 1px solid #e3ebe7; }
 .plant-picker:has(#selectedPlant:not([hidden])) .plant-results { max-height: max(150px, calc(100svh - 466px)); }
-.plant-result { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 6px; width: 100%; min-height: 58px; padding: 10px 10px 9px; border: 0; border-bottom: 1px solid #e9eeeb; background: #fff; color: #284b3c; text-align: left; cursor: pointer; }
+.plant-result { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 6px; width: 100%; min-height: 58px; padding: 10px 10px 9px; border: 0; border-bottom: 1px solid #e9eeeb; background: var(--plant-category-color, #fff); color: #284b3c; text-align: left; cursor: pointer; }
+.plant-result[data-category="tropical"] { --plant-category-color: #edf7ef; }
+.plant-result[data-category="vegetables"] { --plant-category-color: #f4f8e8; }
+.plant-result[data-category="annuals"] { --plant-category-color: #fff2eb; }
+.plant-result[data-category="perennials"] { --plant-category-color: #f4effa; }
+.plant-result[data-category="bulbs"] { --plant-category-color: #fff7e8; }
+.plant-result[data-category="trees"] { --plant-category-color: #f3f2e9; }
+.plant-result[data-category="australian"] { --plant-category-color: #f8f3e8; }
+.plant-result[data-category="succulents"] { --plant-category-color: #f7eff3; }
+.plant-result[data-category="caudex"] { --plant-category-color: #fcf1e6; }
+.plant-result[data-category="tillandsia"] { --plant-category-color: #f0f3f9; }
+.plant-result[data-category="fruits"] { --plant-category-color: #fceff0; }
+.plant-result[data-category="herbs"] { --plant-category-color: #edf8f4; }
+.plant-result[data-category="orchids"] { --plant-category-color: #faeff8; }
+.plant-result[data-category="ferns"] { --plant-category-color: #eff6e9; }
+.plant-result[data-category="aquatic"] { --plant-category-color: #ecf6fb; }
+.plant-result[data-category="carnivorous"] { --plant-category-color: #f8eff0; }
+.plant-result[data-category="bonsai"] { --plant-category-color: #f2f0ed; }
 .plant-result:last-child { border-bottom: 0; }
 .plant-result strong { grid-column: 1; font-size: 0.8rem; line-height: 1.4; overflow-wrap: anywhere; }
-.plant-result small { grid-column: 1; font-size: 0.68rem; line-height: 1.35; color: #6c7d75; font-style: italic; overflow-wrap: anywhere; }
+.plant-result small { grid-column: 1; font-size: 0.68rem; line-height: 1.35; color: #586d63; font-style: italic; overflow-wrap: anywhere; }
 .plant-result-rating { grid-column: 2; grid-row: 1 / 3; align-self: center; display: grid; gap: 2px; justify-items: end; }
-.plant-rating-label { color: #6b7d75; font-size: 0.6rem; font-weight: 400; font-style: normal; line-height: 1.2; white-space: nowrap; }
-.plant-result-stars { color: #957226; font-size: 0.64rem; line-height: 1.2; white-space: nowrap; letter-spacing: -0.05em; }
-.plant-result:hover { background: #f3f8f5; }
+.plant-rating-label { color: #586d63; font-size: 0.6rem; font-weight: 400; font-style: normal; line-height: 1.2; white-space: nowrap; }
+.plant-result-stars { color: #795a1c; font-size: 0.64rem; line-height: 1.2; white-space: nowrap; letter-spacing: -0.05em; }
+.plant-result:hover { background-image: linear-gradient(#284b3c0a, #284b3c0a); }
 .plant-result[aria-pressed="true"] { background: #e9f3ed; box-shadow: inset 3px 0 #207458; }
 .plant-result[aria-pressed="true"] strong { color: #104e36; }
 .plant-result:focus-visible { outline-offset: -2px; }

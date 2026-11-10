@@ -164,14 +164,14 @@ const app=fs.readFileSync(process.argv[1],'utf8');
 const source=app.match(/^  async function loadPlantCatalog\([\s\S]*?^  }/m)[0];
 const normalize=app.match(/^  function normalizePlantSearch\([\s\S]*?^  }/m)[0];
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
-const run=new AsyncFunction('fetch','state','elements','document','renderPlantResults','plantMatchesCategory',normalize+'\n'+source+'\nawait loadPlantCatalog();');
+const run=new AsyncFunction('fetch','state','elements','document','renderPlantResults','plantMatchesCategory','pickupById','pickupOrder',normalize+'\n'+source+'\nawait loadPlantCatalog();');
 const plant=id=>({id,name:id,scientificName:id,aliases:[],category:'garden',reference:{stars:4,reason:'provisional',sourceUrl:'https://example.org/garden'},sourceUrl:'https://example.org/taxon',regionCodes:['KOR'],nativeAreas:['Korea']});
 async function check(change={}) {
  const main={schema:1,plants:[plant('first')],plantFiles:['plants-2.json'],plantCount:2,categories:[{id:'garden',label:'Garden'}],outlineFiles:['plant-outlines.json'],regionSource:{sha256:'fixed'}};
  const shard={schema:1,plants:[plant('second')]};
  if(change.main)Object.assign(main,change.main);if(change.shard)Object.assign(shard,change.shard);
  const calls=[],state={plants:[]};let rendered=0;
- const elements={plantCategory:{options:[{}],disabled:true,append(){}},plantSearch:{disabled:true},plantCatalogCount:{},plantResultCount:{}};
+ const elements={plantCategory:{options:[{},{}],disabled:true,append(){}},plantSearch:{disabled:true},plantCatalogCount:{},plantResultCount:{}};
  const fetch=async url=>{calls.push(url);let data;
   if(url.includes('/plants.json?'))data=main;
   else if(url.includes('/plants-2.json?')){if(change.missing)return {ok:false,status:404};data=shard;}
@@ -179,11 +179,16 @@ async function check(change={}) {
   else throw Error('unexpected fetch '+url);
   return {ok:true,json:async()=>structuredClone(data)};
  };
- await run(fetch,state,elements,{createElement:()=>({})},()=>rendered++,()=>true);
+ const pickupById=new Map([['second',{category:'garden',name:'ピックアップ'}]]);
+ await run(fetch,state,elements,{createElement:()=>({})},()=>rendered++,()=>true,pickupById,['second']);
  return {calls,state,elements,rendered};
 }
 (async()=>{
  const good=await check();assert.deepEqual(good.state.plants.map(p=>p.id),['first','second']);assert.equal(good.rendered,1);assert.equal(good.elements.plantSearch.disabled,false);
+ assert.deepEqual(good.state.pickupPlants.map(p=>p.id),['second']);
+ assert.equal(good.elements.plantCategory.value,'pickup');
+ assert.deepEqual(good.elements.plantCategory.options.map(option=>option.textContent),['おすすめピックアップ（1）','すべて（2）']);
+ assert.ok(good.state.pickupPlants[0].searchText.includes('ピックアップ'));
  const retail={...plant('retail'),scientificName:'',taxonRank:'market-name',originKind:'unresolved',sourceLabel:'Nursery',nativeAreas:[],regionCodes:[],reference:{stars:1,reason:'market identity',sourceUrl:'https://example.org/plant'}};
  assert.equal((await check({shard:{plants:[retail]}})).state.plants.length,2);
  assert.equal((await check({shard:{plants:[{...retail,relatedPlantId:'first',relatedEvidenceUrl:'https://example.org/plant'}]}})).state.plants.length,2);
@@ -527,6 +532,20 @@ def verify_plant_catalog(app: str) -> None:
     require(catalog['checkedAt'] == '2026-10-27', 'catalog update date missing')
     require(len(plants) >= 10000 and len({p['id'] for p in plants}) == len(plants), 'plant count or duplicate ID')
     require({c['id'] for c in catalog['categories']} == expected, 'plant categories mismatch')
+    pickup_groups = json.loads(app.split('const PLANT_PICKUP_GROUPS = ', 1)[1].split(';', 1)[0])
+    pickup_lead = json.loads(app.split('const PLANT_PICKUP_LEAD = ', 1)[1].split(';', 1)[0])
+    pickup_ids = [plant_id for entries in pickup_groups.values() for plant_id, label in entries]
+    pickup_labels = [label for entries in pickup_groups.values() for _, label in entries]
+    require(set(pickup_groups) == expected and all(pickup_groups.values()), 'pickup genre mismatch')
+    require(len(pickup_ids) == len(set(pickup_ids)) == len(set(pickup_labels)) == 200
+            and all(label.strip() for label in pickup_labels), 'pickup count, ID or label mismatch')
+    require(pickup_lead and len(pickup_lead) == len(set(pickup_lead))
+            and set(pickup_lead) <= set(pickup_ids), 'pickup lead contains invalid IDs')
+    require(set(pickup_ids) <= {p['id'] for p in plants if p['reference']['stars'] >= 3
+                               and p['id'] in outlines['plantKeys']}, 'pickup plant lacks catalog or range data')
+    styles = (ROOT / 'styles.css').read_text(encoding='utf-8')
+    require(set(re.findall(r'\.plant-result\[data-category="([^"]+)"\] \{ --plant-category-color:', styles))
+            == expected, 'pickup and catalog genres must have background colors')
     optional = {'name','aliases','additionalCategories','marketEvidence'}
     protected = [{k:v for k,v in p.items() if k not in optional} for p in plants[:5000]]
     require(hashlib.sha256(json.dumps(protected, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
@@ -729,8 +748,8 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261027-catalog-43000\" defer></script>" in index, "versioned local deferred script missing")
-    require('href="./styles.css?v=20261110-compact-footer"' in index, "versioned local stylesheet missing")
+    require("<script src=\"./app.js?v=20261110-plant-pickup\" defer></script>" in index, "versioned local deferred script missing")
+    require('href="./styles.css?v=20261110-plant-pickup"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
     require("耐寒性・栽培可否の判定ではありません" in index, "reference rating disclaimer missing")
