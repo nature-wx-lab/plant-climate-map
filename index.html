@@ -24,7 +24,7 @@
   <script src="./geography.js?v=20261003-label-spacing" defer></script>
   <script src="./globe.js?v=20261014-globe-space" defer></script>
   <script src="./map-context.js?v=20261003-context-maps" defer></script>
-  <script src="./app.js?v=20261110-plant-pickup" defer></script>
+  <script src="./app.js?v=20261110-plant-pickup-by-genre" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -80,7 +80,7 @@
           <summary id="plantPickerHeading">植物一覧 <small id="plantCatalogCount">読込中</small></summary>
           <div class="plant-filters">
             <label class="search-field" for="plantSearch"><span class="sr-only">名前・学名で検索</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><input id="plantSearch" type="search" placeholder="植物名・学名で検索" autocomplete="off" disabled></label>
-            <label class="category-field" for="plantCategory"><span>ジャンル</span><select id="plantCategory" disabled><option value="pickup">おすすめピックアップ</option><option value="all">すべて</option></select></label>
+            <label class="category-field" for="plantCategory"><span>ジャンル</span><select id="plantCategory" disabled><option value="all">すべて</option><option value="pickup" selected>おすすめピックアップ</option></select></label>
           </div>
           <p id="plantResultCount" class="plant-result-count" role="status">植物データを読み込んでいます</p>
           <div id="plantResults" class="plant-results" aria-label="植物の検索結果"></div>

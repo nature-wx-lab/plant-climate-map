@@ -288,21 +288,8 @@
       ["rohdea-japonica", "オモト"]
     ]
   };
-  const PLANT_PICKUP_LEAD = [
-    "nemophila-menziesii",
-    "hydrangea-macrophylla",
-    "olea-europaea",
-    "dionaea-muscipula",
-    "monstera-deliciosa",
-    "abelmoschus-esculentus",
-    "acacia-baileyana",
-    "curio-rowleyanus",
-    "cyclamen-hederifolium",
-    "nelumbo-nucifera"
-  ];
   const pickupById = new Map(Object.entries(PLANT_PICKUP_GROUPS).flatMap(([category, entries]) =>
     entries.map(([id, name]) => [id, { category, name }])));
-  const pickupOrder = [...new Set([...PLANT_PICKUP_LEAD, ...pickupById.keys()])];
   const KOPPEN_CLASSES = [
     ["Af", "熱帯雨林"], ["Am", "熱帯モンスーン"], ["Aw", "サバナ"],
     ["BWh", "高温砂漠"], ["BWk", "低温砂漠"], ["BSh", "高温ステップ"], ["BSk", "低温ステップ"],
@@ -1466,10 +1453,11 @@
         plant.searchText = normalizePlantSearch([plant.name, plant.scientificName, ...plant.aliases, pickupById.get(plant.id)?.name].join(" "));
       }
       state.plants = catalog.plants;
-      state.pickupPlants = pickupOrder.map((id) => plantsById.get(id)).filter(Boolean);
+      state.pickupPlants = catalog.categories.flatMap(({ id }) =>
+        (PLANT_PICKUP_GROUPS[id] ?? []).map(([plantId]) => plantsById.get(plantId))).filter(Boolean);
       state.plantOutlines = outlines;
-      elements.plantCategory.options[0].textContent = `おすすめピックアップ（${state.pickupPlants.length}）`;
-      elements.plantCategory.options[1].textContent = `すべて（${catalog.plants.length}）`;
+      elements.plantCategory.options[0].textContent = `すべて（${catalog.plants.length}）`;
+      elements.plantCategory.options[1].textContent = `おすすめピックアップ（${state.pickupPlants.length}）`;
       elements.plantCategory.value = "pickup";
       for (const category of catalog.categories) {
         const option = document.createElement("option");
