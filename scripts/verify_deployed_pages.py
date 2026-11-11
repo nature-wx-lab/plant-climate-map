@@ -13,7 +13,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from build_deployment_manifest import japan_files, plant_outline_files
+from build_deployment_manifest import japan_files, place_search_files, plant_outline_files
 from plant_catalog import plant_catalog_files
 
 
@@ -45,7 +45,7 @@ EXPECTED_FILES = {
     "sitemap.xml",
     "styles.css",
     "data/climate-layers/manifest.json",
-} | CLIMATE_LAYER_FILES | set(japan_files(ROOT)) | set(plant_outline_files(ROOT)) | set(plant_catalog_files(ROOT))
+} | CLIMATE_LAYER_FILES | set(japan_files(ROOT)) | set(plant_outline_files(ROOT)) | set(plant_catalog_files(ROOT)) | set(place_search_files(ROOT))
 
 
 def request(url: str) -> urllib.request.Request:

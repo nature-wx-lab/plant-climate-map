@@ -345,6 +345,20 @@
     plantOriginLabel: document.getElementById("plantOriginLabel"),
     plantChoiceState: document.getElementById("plantChoiceState"),
     plantOriginInfo: document.getElementById("plantOriginInfo"),
+    plantRepresentative: document.getElementById("plantRepresentative"),
+    plantRepresentativeNote: document.getElementById("plantRepresentativeNote"),
+    plantRepresentativeSource: document.getElementById("plantRepresentativeSource"),
+    placeSearch: document.getElementById("placeSearch"),
+    placeStatus: document.getElementById("placeStatus"),
+    placeResults: document.getElementById("placeResults"),
+    placePages: document.getElementById("placePages"),
+    placePrevious: document.getElementById("placePrevious"),
+    placeNext: document.getElementById("placeNext"),
+    placePageLabel: document.getElementById("placePageLabel"),
+    placeChoice: document.getElementById("placeChoice"),
+    placeChoiceLabel: document.getElementById("placeChoiceLabel"),
+    placeReference: document.getElementById("placeReference"),
+    placeReferenceStatus: document.getElementById("placeReferenceStatus"),
     focusPlantOrigin: document.getElementById("focusPlantOrigin"),
     plantMapBadge: document.getElementById("plantMapBadge"),
     mapDescription: document.getElementById("mapDescription"),
@@ -381,12 +395,15 @@
     humidityChart: document.getElementById("humidityChart"),
     resultPanel: document.getElementById("resultPanel"),
     resultHeading: document.querySelector(".result-heading"),
+    resultHeaderActions: document.querySelector(".result-header-actions"),
     resultTitle: document.getElementById("resultHeading"),
     setReference: document.getElementById("setReference"),
     toggleComparison: document.getElementById("toggleComparison"),
     referenceShortLabel: document.getElementById("referenceShortLabel"),
     clearReference: document.getElementById("clearReference"),
     swapLocations: document.getElementById("swapLocations"),
+    resetLocations: document.getElementById("resetLocations"),
+    resetMapLocations: document.getElementById("resetMapLocations"),
     toggleSeasonShift: document.getElementById("toggleSeasonShift"),
     seasonShiftStatus: document.getElementById("seasonShiftStatus"),
     referenceCard: document.getElementById("referenceCard"),
@@ -470,6 +487,12 @@
     plantResultKey: null,
     plantResultLimit: 100,
     plantOutlines: null,
+    plantRepresentatives: new Map(),
+    placeIndex: null,
+    placeMatches: [],
+    placePage: 0,
+    placeSearchSerial: 0,
+    placeChoice: null,
     selectedPlant: null,
     currentRecord: null,
     referenceRecord: null,
@@ -737,7 +760,7 @@
 
   function closeResultPanel() {
     elements.resultPanel.hidden = true;
-    elements.openResults.hidden = false;
+    elements.openResults.hidden = !state.currentRecord && !state.referenceRecord;
     elements.openResults.setAttribute("aria-expanded", "false");
     elements.closeResults.setAttribute("aria-expanded", "false");
   }
@@ -789,8 +812,7 @@
     const visibleBottom = Math.min(wrapRect.height, window.innerHeight - wrapRect.top);
     // Park most of the panel beyond either side or below the map, leaving
     // enough of its header inside the visible map to grab it again.
-    const trailingActions = elements.swapLocations.hidden ? 0
-      : headerRect.right - elements.swapLocations.getBoundingClientRect().left;
+    const trailingActions = elements.resultHeaderActions.getBoundingClientRect().width;
     const grabWidth = Math.min(Math.max(140, trailingActions + 64), panelRect.width,
       Math.max(0, visibleRight - visibleLeft - 16));
     const minimumTop = visibleTop + 8;
@@ -1277,6 +1299,129 @@
       .replace(/[^\p{L}\p{N}]/gu, "");
   }
 
+  const PLACE_PAGE_SIZE = 30;
+
+  function normalizePlaceSearch(value) {
+    return value.normalize("NFKC").toLowerCase().normalize("NFD")
+      .replace(/(\p{Script=Latin})\p{M}+/gu, "$1").normalize("NFC")
+      .replace(/[ぁ-ゖ]/g, (character) => String.fromCharCode(character.charCodeAt(0) + 0x60))
+      .replace(/[^\p{L}\p{M}\p{N}]/gu, "");
+  }
+
+  function loadPlaceIndex() {
+    if (state.placeIndex) return state.placeIndex;
+    const fetchJSON = async (name) => {
+      const response = await fetch(`./data/${name}?v=20261112-location-tools`, { credentials: "same-origin", referrerPolicy: "no-referrer" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    };
+    state.placeIndex = (async () => {
+      const { schema, japan, worldFiles, worldCount } = await fetchJSON("place-search-index.json");
+      if (schema !== 1 || !Array.isArray(japan) || !Array.isArray(worldFiles)
+          || worldFiles.some((name) => !/^place-search-world-\d{2}\.json$/.test(name))) {
+        throw new Error("地点データ形式が不正です");
+      }
+      const chunks = await Promise.all(worldFiles.map(fetchJSON));
+      if (chunks.some((chunk) => !Array.isArray(chunk))
+          || chunks.reduce((total, chunk) => total + chunk.length, 0) !== worldCount) {
+        throw new Error("地点データの件数が一致しません");
+      }
+      return japan.concat(...chunks).map(([id, name, label, latitude, longitude, aliases]) => ({
+        id, name, label, latitude, longitude, primaryKey: normalizePlaceSearch(name),
+        labelKey: normalizePlaceSearch(label),
+        aliasesKey: aliases.split(",").map(normalizePlaceSearch).join("\u0000"),
+      }));
+    })().catch((error) => {
+      state.placeIndex = null;
+      throw error;
+    });
+    return state.placeIndex;
+  }
+
+  async function searchPlaces() {
+    const serial = ++state.placeSearchSerial;
+    const query = normalizePlaceSearch(elements.placeSearch.value);
+    setPlaceChoice(null);
+    state.placeMatches = [];
+    state.placePage = 0;
+    elements.placeStatus.hidden = !query;
+    renderPlaceResults();
+    if (!query) return;
+    elements.placeStatus.textContent = "地点を検索しています…";
+    try {
+      const places = await loadPlaceIndex();
+      if (serial !== state.placeSearchSerial) return;
+      const exact = [], prefix = [], partial = [];
+      for (const place of places) {
+        if (place.primaryKey === query || place.labelKey === query) exact.push(place);
+        else if (place.primaryKey.startsWith(query)) prefix.push(place);
+        else if (place.labelKey.includes(query) || place.aliasesKey.includes(query)) partial.push(place);
+      }
+      state.placeMatches = exact.concat(prefix, partial);
+      elements.placeStatus.textContent = state.placeMatches.length
+        ? `${state.placeMatches.length.toLocaleString("ja-JP")}件`
+        : "収録地点に一致する名前がありません";
+      renderPlaceResults();
+    } catch (error) {
+      if (serial === state.placeSearchSerial) elements.placeStatus.textContent = "地点データを読み込めませんでした。もう一度検索してください。";
+    }
+  }
+
+  function setPlaceChoice(place) {
+    state.placeChoice = place;
+    elements.placeChoice.hidden = !place;
+    elements.placeChoiceLabel.textContent = place?.label ?? "";
+    elements.placeReference.disabled = false;
+    elements.placeReferenceStatus.textContent = "";
+    for (const button of elements.placeResults.querySelectorAll("button")) {
+      button.setAttribute("aria-pressed", String(button.dataset.placeId === String(place?.id)));
+    }
+  }
+
+  function renderPlaceResults() {
+    const total = state.placeMatches.length;
+    const pageCount = Math.ceil(total / PLACE_PAGE_SIZE);
+    state.placePage = clamp(state.placePage, 0, Math.max(0, pageCount - 1));
+    const start = state.placePage * PLACE_PAGE_SIZE;
+    const fragment = document.createDocumentFragment();
+    for (const place of state.placeMatches.slice(start, start + PLACE_PAGE_SIZE)) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "place-result";
+      button.dataset.placeId = String(place.id);
+      button.setAttribute("aria-pressed", String(state.placeChoice?.id === place.id));
+      button.textContent = place.label;
+      button.addEventListener("click", () => {
+        if (state.placeChoice !== place) setPlaceChoice(place);
+        elements.placeReference.focus({ preventScroll: true });
+      });
+      fragment.append(button);
+    }
+    elements.placeResults.replaceChildren(fragment);
+    elements.placeResults.scrollTop = 0;
+    elements.placeResults.hidden = !total;
+    elements.placePages.hidden = pageCount <= 1;
+    elements.placePrevious.disabled = state.placePage === 0;
+    elements.placeNext.disabled = state.placePage + 1 >= pageCount;
+    elements.placePageLabel.textContent = `${state.placePage + 1} / ${pageCount}ページ`;
+  }
+
+  async function setReferenceFromPlace() {
+    const place = state.placeChoice;
+    if (!place) return;
+    elements.placeReference.disabled = true;
+    elements.placeReferenceStatus.textContent = "気候データを読み込み中…";
+    closeResultPanel();
+    const result = selectClimateLocation(place.longitude, place.latitude, { place, center: true, open: false });
+    const serial = state.selectionSerial;
+    const ready = await result;
+    if (serial === state.selectionSerial && ready) setReferenceFromCurrent();
+    if (state.placeChoice !== place) return;
+    elements.placeReference.disabled = ready;
+    elements.placeReferenceStatus.textContent = ready ? "基準Aに設定しました"
+      : serial === state.selectionSerial ? "気候データを読み込めませんでした。再度お試しください。" : "地点の選択が変更されました";
+  }
+
   function plantStars(plant) {
     return "★".repeat(plant.reference.stars) + "☆".repeat(5 - plant.reference.stars);
   }
@@ -1379,6 +1524,15 @@
     elements.plantOriginInfo.hidden = false;
     elements.selectedPlantName.textContent = plant.name;
     elements.selectedPlantScientific.textContent = plant.scientificName || "流通名で掲載";
+    const representative = state.plantRepresentatives.get(id);
+    elements.plantRepresentative.hidden = !representative;
+    elements.plantRepresentativeSource.hidden = !representative;
+    elements.plantRepresentativeNote.textContent = representative
+      ? "原産地域内の標本記録から選んだ気候メッシュ"
+      : "代表地点は未設定です";
+    if (representative) {
+      elements.plantRepresentativeSource.href = `https://www.gbif.org/occurrence/${representative.occurrenceKey}`;
+    }
     elements.plantReferenceStars.textContent = plantStars(plant);
     elements.plantReferenceStars.setAttribute("aria-label", `5段階中${plant.reference.stars}`);
     elements.plantReferenceReason.textContent = hasCultivarName
@@ -1428,7 +1582,7 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      const catalogVersion = "20261111-catalog-identity-audit";
+      const catalogVersion = "20261112-location-tools";
       const catalog = await fetchCatalogJSON(`./data/plants.json?v=${catalogVersion}`);
       const plantFiles = catalog.plantFiles ?? [];
       if (!Array.isArray(plantFiles) || new Set(plantFiles).size !== plantFiles.length
@@ -1469,6 +1623,7 @@
               || !/^https:\/\//.test(plant.relatedEvidenceUrl)))) throw new Error("植物の分布・参考度が不足しています");
         plant.searchText = normalizePlantSearch([plant.name, plant.scientificName, ...plant.aliases, pickupById.get(plant.id)?.name].join(" "));
       }
+      state.plantRepresentatives = new Map(Object.entries(catalog.representativeLocations ?? {}));
       state.plants = catalog.plants;
       state.pickupPlants = catalog.categories.flatMap(({ id }) =>
         (PLANT_PICKUP_GROUPS[id] ?? []).map(([plantId]) => plantsById.get(plantId))).filter(Boolean);
@@ -1537,14 +1692,14 @@
       loadGeographyLabels();
       syncGlobe();
       if (state.referenceRecord?.cell) {
-        state.referenceRecord.location = describeLocation(state.referenceRecord.cell);
+        state.referenceRecord.location = describeLocation(state.referenceRecord.cell, state.referenceRecord.place);
       }
-      if (state.selectedCell) updateLocation(state.selectedCell);
+      if (state.selectedCell) updateLocation(state.selectedCell, state.currentRecord?.place);
     } catch (error) {
       state.geographyStatus = "error";
       elements.geographyStatus.textContent = "地図・地名を読み込めませんでした。再読込してください。";
-      if (state.referenceRecord?.cell) state.referenceRecord.location = describeLocation(state.referenceRecord.cell);
-      if (state.selectedCell) updateLocation(state.selectedCell);
+      if (state.referenceRecord?.cell) state.referenceRecord.location = describeLocation(state.referenceRecord.cell, state.referenceRecord.place);
+      if (state.selectedCell) updateLocation(state.selectedCell, state.currentRecord?.place);
     }
   }
 
@@ -1739,7 +1894,8 @@
     return nearest ? { place: nearest, distance: nearestDistance } : null;
   }
 
-  function describeLocation(cell) {
+  function describeLocation(cell, place = null) {
+    if (place) return { countryName: "", areaLabel: place.label, placeName: place.name, headerLabel: place.label };
     const country = countryAt(cell.longitude, cell.latitude);
     if (!country) {
       const coordinates = `${coordinateLabel(cell.latitude, "N", "S")}, ${coordinateLabel(cell.longitude, "E", "W")}`;
@@ -1775,13 +1931,14 @@
     };
   }
 
-  function updateLocation(cell) {
-    const location = describeLocation(cell);
+  function updateLocation(cell, selectedPlace = null) {
+    const location = describeLocation(cell, selectedPlace);
     const previous = state.currentRecord;
     if (!sameCell(previous?.cell, cell)) state.dataStatus = null;
     state.currentRecord = {
       cell,
       location,
+      place: selectedPlace,
       climate: sameCell(previous?.cell, cell) ? previous.climate : null,
       daily: sameCell(previous?.cell, cell) ? previous.daily : null,
     };
@@ -1791,10 +1948,9 @@
       : "気象格子：約0.5°×0.625°（地図の枠）";
     const span = document.createElement("span");
     span.textContent = `格子中心：${coordinateLabel(cell.latitude, "N", "S")}, ${coordinateLabel(cell.longitude, "E", "W")}`;
-    const country = countryAt(cell.longitude, cell.latitude);
     const place = document.createElement("span");
     place.className = "place-summary";
-    place.textContent = `国・地域：${location.countryName}｜周辺：${location.areaLabel}`;
+    place.textContent = selectedPlace ? `検索地点：${selectedPlace.label}` : `国・地域：${location.countryName}｜周辺：${location.areaLabel}`;
     const note = document.createElement("small");
     note.textContent = cell.kind?.startsWith("japan-")
       ? "気温・降水・日射・相対湿度は観測値を基にした約1kmの独自推定です。気象庁が公表する公式な1km日別平年値ではなく、欠測をNASA値で埋めません。"
@@ -2433,6 +2589,9 @@
     elements.toggleComparison.setAttribute("aria-pressed", String(state.comparisonEnabled));
     elements.swapLocations.hidden = !hasReference || currentIsReference;
     elements.swapLocations.disabled = !currentReady;
+    const hasSelection = Boolean(state.currentRecord || state.referenceRecord);
+    elements.resetLocations.hidden = !hasSelection;
+    elements.resetMapLocations.disabled = !hasSelection;
     const actions = hasReference ? elements.currentActions : elements.referenceActions;
     if (elements.setReference.parentElement !== actions) actions.prepend(elements.setReference);
     elements.referenceCard.parentElement.classList.toggle("has-reference", hasReference);
@@ -2792,6 +2951,7 @@
     state.referenceRecord = {
       cell: { ...state.currentRecord.cell },
       location: { ...state.currentRecord.location },
+      place: state.currentRecord.place,
       climate: state.currentRecord.climate,
       daily: state.currentRecord.daily,
     };
@@ -2823,8 +2983,30 @@
     state.currentRecord = state.referenceRecord;
     state.referenceRecord = previous;
     state.selectedCell = state.currentRecord.cell;
-    updateLocation(state.currentRecord.cell);
+    updateLocation(state.currentRecord.cell, state.currentRecord.place);
     renderCurrentPayload();
+  }
+
+  function resetLocations() {
+    // A map click can still be resolving a cell, even before it starts loading climate data.
+    state.selectionSerial += 1;
+    state.requestSerial += 1;
+    state.controller?.abort();
+    state.controller = null;
+    state.selectedCell = null;
+    setPlaceChoice(null);
+    state.currentRecord = null;
+    state.referenceRecord = null;
+    state.comparisonEnabled = true;
+    state.seasonShiftEnabled = false;
+
+    const message = "地図をクリックしてください";
+    elements.locationSummary.replaceChildren();
+    setStatus(message);
+    resetValues(message);
+    setResultPanelPage("overview");
+    closeResultPanel();
+    elements.mapGuide.focus({ preventScroll: true });
   }
 
   function resetValues(message) {
@@ -3007,12 +3189,15 @@
     return point.matrixTransform(matrix.inverse());
   }
 
-  async function selectFromEvent(event) {
+  function selectFromEvent(event) {
     const point = eventPoint(event);
     if (!point || (state.projection === "flat" && (point.y < 0 || point.y > MAP_SIZE))) return;
     const coordinate = state.projection === "globe" ? globe.invert(point.x, point.y) : unproject(point.x, point.y);
     if (!coordinate) return;
-    const [longitude, latitude] = coordinate;
+    selectClimateLocation(...coordinate);
+  }
+
+  async function selectClimateLocation(longitude, latitude, { place = null, center = false, open = true } = {}) {
     if (Math.abs(latitude) > MAX_LAT) {
       elements.mapGuide.hidden = false;
       elements.mapGuide.textContent = "この極域には気候データがありません（表示データは緯度±85.05°まで）";
@@ -3028,11 +3213,14 @@
     }
     if (serial !== state.selectionSerial) return;
     state.selectedCell = cell;
-    updateLocation(cell);
+    updateLocation(cell, place);
+    if (center) focusLocation({ cell });
     drawSelections();
     if (!state.referenceRecord) setResultPanelPage("overview");
-    openResultPanel();
-    loadClimate(cell);
+    if (open) openResultPanel();
+    else closeResultPanel();
+    await loadClimate(cell);
+    return serial === state.selectionSerial && state.currentRecord?.climate != null;
   }
 
   function beginDrag(event) {
@@ -3217,7 +3405,7 @@
   elements.toggleLayerPanel.addEventListener("click", () => {
     const expanded = elements.layerPanel.classList.toggle("is-open");
     elements.toggleLayerPanel.setAttribute("aria-expanded", String(expanded));
-    elements.toggleLayerPanel.textContent = expanded ? "地図へ戻る" : "植物を選ぶ";
+    elements.toggleLayerPanel.textContent = expanded ? "地図へ戻る" : "地点・植物を選ぶ";
   });
   document.addEventListener("pointerdown", (event) => {
     if (elements.mapSettings.open && !elements.mapSettings.contains(event.target)) elements.mapSettings.open = false;
@@ -3238,6 +3426,27 @@
     updatePlantOrigin();
   });
   elements.focusPlantOrigin.addEventListener("click", focusPlantOrigin);
+  elements.plantRepresentative.addEventListener("click", () => {
+    const representative = state.plantRepresentatives.get(state.selectedPlant?.id);
+    if (!representative) return;
+    if (window.matchMedia("(max-width: 760px)").matches && elements.layerPanel.classList.contains("is-open")) {
+      elements.toggleLayerPanel.click();
+    }
+    selectClimateLocation(representative.longitude, representative.latitude, { center: true });
+  });
+  elements.placeSearch.addEventListener("input", (event) => {
+    if (!event.isComposing) searchPlaces();
+  });
+  elements.placeSearch.addEventListener("compositionend", searchPlaces);
+  elements.placeReference.addEventListener("click", setReferenceFromPlace);
+  elements.placePrevious.addEventListener("click", () => {
+    state.placePage -= 1;
+    renderPlaceResults();
+  });
+  elements.placeNext.addEventListener("click", () => {
+    state.placePage += 1;
+    renderPlaceResults();
+  });
   elements.plantCategory.addEventListener("change", () => {
     state.plantCategoryFollowsSearch = false;
     renderPlantResults();
@@ -3324,6 +3533,8 @@
   });
   elements.clearReference.addEventListener("click", clearReference);
   elements.swapLocations.addEventListener("click", swapLocations);
+  elements.resetLocations.addEventListener("click", resetLocations);
+  elements.resetMapLocations.addEventListener("click", resetLocations);
   elements.closeResults.addEventListener("click", closeResultPanel);
   elements.pickComparison.addEventListener("click", closeResultPanel);
   elements.openResults.addEventListener("click", openResultPanel);

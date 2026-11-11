@@ -112,3 +112,9 @@ Runtime viewport tiles from the Geospatial Information Authority of Japan (GSI) 
 - Satellite imagery: NASA LP DAAC / USGS EROS (https://lpdaac.usgs.gov/data_access); Landsat 8 (GSI, TSIC, GEO Grid/AIST), USGS; GRUS imagery © Axelspace. Ocean relief portions use Japan Coast Guard Hydrographic and Oceanographic Department materials.
 
 GSI and these providers do not endorse this tool. Context maps are geographic imagery, not current observations or climate data. Tile requests include the viewed area tile numbers and ordinary network information; they are made only while the corresponding map or terrain layer has nonzero opacity.
+
+## 地点検索
+
+- 日本の市区町村・行政区は[デジタル庁のアドレス・ベース・レジストリ](https://dataset.address-br.digital.go.jp/)の「市区町村マスター」「市区町村マスター位置参照」をもとにNatureWxLabが加工。現行の行政区画名と、位置参照の代表座標を結合しました。[利用規約（PDL1.0）](https://www.digital.go.jp/policies/base_registry_address_tos)
+- 日本国外の都市・集落は[GeoNames](https://www.geonames.org/)の `cities500.zip`、`admin1CodesASCII.txt`、`countryInfo.txt` をもとにNatureWxLabが加工。別名と行政区・国名を検索用にまとめました。[データの説明](https://download.geonames.org/export/dump/readme.txt)・[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- 植物の代表地点は、カタログの原産地域に含まれる[GBIF](https://www.gbif.org/)掲載のCC0標本記録を参照し、比較に使う気候メッシュを選んでいます。各地点の標本番号とデータセットは `data/plants.json` の `representativeLocations` に収録し、個別記録と提供機関は植物詳細の「標本記録（GBIF）」から参照できます。[GBIFデータ利用規約](https://www.gbif.org/terms/data-user)

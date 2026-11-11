@@ -18,13 +18,13 @@
   <meta name="twitter:card" content="summary">
   <title>植物気候マップ｜Nature Wx Lab</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2318675b'/%3E%3Cpath d='M32 51V28M32 35C19 34 14 25 14 14c12 0 20 6 18 21zm0-2c13-1 18-10 18-21-12 0-20 6-18 21z' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css?v=20261111-plant-origin-link">
+  <link rel="stylesheet" href="./styles.css?v=20261112-location-tools">
   <script src="./vendor/d3-array-3.2.4.min.js" defer></script>
   <script src="./vendor/d3-geo-3.1.1.min.js" defer></script>
   <script src="./geography.js?v=20261003-label-spacing" defer></script>
   <script src="./globe.js?v=20261014-globe-space" defer></script>
   <script src="./map-context.js?v=20261003-context-maps" defer></script>
-  <script src="./app.js?v=20261111-catalog-identity-audit" defer></script>
+  <script src="./app.js?v=20261112-location-tools" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -70,12 +70,33 @@
   </header>
 
   <main class="workspace">
-    <aside id="layerPanel" class="layer-panel" aria-label="植物を選ぶ">
+    <aside id="layerPanel" class="layer-panel" aria-label="地点と植物を選ぶ">
       <div class="layer-panel-heading">
-        <button id="toggleLayerPanel" type="button" aria-controls="plantPicker" aria-expanded="false">植物を選ぶ</button>
+        <button id="toggleLayerPanel" type="button" aria-controls="plantPicker" aria-expanded="false">地点・植物を選ぶ</button>
+        <span id="placeSearchHeading">地点検索</span>
+        <button id="resetMapLocations" class="map-reset-locations" type="button" title="地点Aと地点Bの選択を解除する" disabled>A・Bをリセット</button>
       </div>
 
-      <section id="plantPicker" class="plant-picker" aria-labelledby="plantPickerHeading">
+      <div id="plantPicker" class="plant-picker">
+        <section class="place-search" aria-labelledby="placeSearchHeading">
+          <label class="search-field" for="placeSearch"><span class="sr-only">地点名で検索</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><input id="placeSearch" type="search" placeholder="地点名で検索（例：花見川区）" autocomplete="off"></label>
+          <p id="placeStatus" class="plant-result-count" role="status" hidden></p>
+          <div id="placeChoice" class="place-choice" hidden>
+            <strong id="placeChoiceLabel"></strong>
+            <button id="placeReference" type="button">この地点を基準Aに</button>
+            <span id="placeReferenceStatus" role="status"></span>
+          </div>
+          <div id="placeResults" class="place-results" aria-label="地点の検索結果" hidden></div>
+          <nav id="placePages" class="place-pages" aria-label="地点の検索結果ページ" hidden>
+            <button id="placePrevious" type="button">前へ</button>
+            <span id="placePageLabel"></span>
+            <button id="placeNext" type="button">次へ</button>
+          </nav>
+          <details class="place-sources"><summary>地点検索の収録範囲・出典</summary>
+            <p>日本の市区町村・行政区と、世界の都市・集落を検索できます。収録された別名にも部分一致します。</p>
+            <p><a href="https://dataset.address-br.digital.go.jp/" target="_blank" rel="noopener noreferrer">デジタル庁の市区町村マスター・位置参照</a>（<a href="https://www.digital.go.jp/policies/base_registry_address_tos" target="_blank" rel="noopener noreferrer">PDL1.0</a>）、<a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a>（<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>）をもとにNatureWxLabが加工。</p>
+          </details>
+        </section>
         <details id="plantBrowser" class="plant-browser">
           <summary id="plantPickerHeading">植物一覧 <small id="plantCatalogCount">読込中</small></summary>
           <div class="plant-filters">
@@ -91,6 +112,11 @@
           <div class="plant-origin-actions">
             <button id="togglePlantOrigin" type="button" aria-pressed="false" aria-controls="plantOriginLayer"><span class="origin-line-key" aria-hidden="true"></span><span id="plantChoiceState">線を表示</span></button>
             <button id="focusPlantOrigin" type="button">原産地へ移動</button>
+          </div>
+          <div class="plant-representative">
+            <button id="plantRepresentative" type="button" hidden>代表地点を選択</button>
+            <p id="plantRepresentativeNote"></p>
+            <a id="plantRepresentativeSource" target="_blank" rel="noopener noreferrer" hidden>標本記録（GBIF）</a>
           </div>
           <div id="plantOriginInfo" class="plant-origin-info" hidden><p id="plantOriginLabel">黒い太線：原産地域の目安</p><p id="plantOriginCaveat" class="origin-caveat">地域全域の自生を示す線ではありません。囲み内をクリックして気候を確認。</p></div>
           <div id="plantRelatedInfo" class="plant-related-info" hidden>
@@ -255,7 +281,7 @@
           <button id="focusLocationB" type="button" aria-label="地点Bを地図の中央へ" hidden>Bへ</button>
         </div>
         <div id="mapLayerLabel" class="sr-only">年平均｜平均気温</div>
-        <p id="mapGuide" class="map-guide">地図をクリックして気候を確認 <span>地点を固定すると、2地点を比較できます</span></p>
+        <p id="mapGuide" class="map-guide" tabindex="-1">地図をクリックして気候を確認 <span>地点を固定すると、2地点を比較できます</span></p>
         <div id="plantMapBadge" class="plant-map-badge" hidden></div>
         <section class="weather-legend" aria-labelledby="weatherLegendTitle"><div class="weather-legend-heading"><strong id="weatherLegendTitle">平均気温</strong><span id="weatherLegendUnit">℃</span><span id="layerStatus" class="layer-status" data-state="ready" role="status">表示中</span></div><div id="weatherLegendBar" class="weather-legend-bar" aria-hidden="true"></div><div id="weatherLegendTicks" class="weather-legend-ticks"></div></section>
         <section id="climateLegend" class="climate-legend" aria-label="ケッペン＝ガイガー気候区分の凡例" hidden>
@@ -278,8 +304,11 @@
               <span class="result-period">1991–2020年の気候平均</span>
             </div>
             <span class="result-drag-hint">つまんで移動</span>
-            <button id="swapLocations" class="header-action" type="button" hidden>A・Bを入れ替え</button>
-            <button id="closeResults" class="drawer-close" type="button" aria-controls="resultPanel" aria-expanded="true" aria-label="気候データを閉じる">×</button>
+            <div class="result-header-actions">
+              <button id="swapLocations" class="header-action" type="button" hidden>A・Bを入れ替え</button>
+              <button id="resetLocations" class="header-action reference-clear" type="button" hidden>A・Bをリセット</button>
+              <button id="closeResults" class="drawer-close" type="button" aria-controls="resultPanel" aria-expanded="true" aria-label="気候データを閉じる">×</button>
+            </div>
           </div>
 
           <section class="comparison-locations" aria-label="基準地点と比較地点">

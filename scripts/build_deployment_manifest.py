@@ -72,6 +72,16 @@ def plant_outline_files(root: Path) -> tuple[str, ...]:
     return tuple('data/' + name for name in names)
 
 
+def place_search_files(root: Path) -> tuple[str, ...]:
+    index_file = "data/place-search-index.json"
+    index = json.loads((root / index_file).read_text(encoding="utf-8"))
+    names = index.get("worldFiles")
+    if (index.get("schema") != 1 or not isinstance(names, list) or not names
+            or names != [f"place-search-world-{number:02}.json" for number in range(1, len(names) + 1)]):
+        raise SystemExit("invalid public place search index")
+    return (index_file, *(f"data/{name}" for name in names))
+
+
 def sha256(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
@@ -94,7 +104,8 @@ def main() -> None:
     destination.mkdir(parents=True)
 
     files: dict[str, dict[str, int | str]] = {}
-    for relative in tuple(dict.fromkeys(DEPLOY_FILES + japan_files(root) + plant_outline_files(root) + plant_catalog_files(root))):
+    for relative in tuple(dict.fromkeys(DEPLOY_FILES + japan_files(root) + plant_outline_files(root)
+                                        + plant_catalog_files(root) + place_search_files(root))):
         source = root / relative
         if not source.is_file() or source.is_symlink():
             raise SystemExit(f"invalid deploy source: {relative}")

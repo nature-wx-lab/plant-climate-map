@@ -13,7 +13,7 @@ import unicodedata
 from pathlib import Path
 from unittest.mock import patch
 
-from build_deployment_manifest import japan_files, plant_outline_files
+from build_deployment_manifest import japan_files, place_search_files, plant_outline_files
 from verify_deployed_pages import EXPECTED_FILES as PUBLIC_FILES
 from plant_catalog import load_plant_catalog, plant_catalog_files
 
@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 JAPAN_FILES = set(japan_files(ROOT))
 PLANT_OUTLINE_FILES = set(plant_outline_files(ROOT))
 PLANT_CATALOG_FILES = set(plant_catalog_files(ROOT))
+PLACE_SEARCH_FILES = set(place_search_files(ROOT))
 CLIMATE_LAYER_KEYS = ("temperature", "precipitation", "humidity", "solar")
 CLIMATE_LAYER_PERIODS = ("annual",) + tuple(f"{month:02d}" for month in range(1, 13))
 CLIMATE_LAYER_FILES = {
@@ -59,6 +60,7 @@ SOURCE_FILES = {
     "scripts/build_climate_layers.py",
     "scripts/build_plant_outlines.py",
     "scripts/build_geography.py",
+    "scripts/build_place_search.py",
     "scripts/build_japan_1km.py",
     "scripts/build_japan_humidity.py",
     "scripts/climate_layers_requirements.txt",
@@ -69,7 +71,7 @@ SOURCE_FILES = {
     "sitemap.xml",
     "styles.css",
     "data/climate-layers/manifest.json",
-} | CLIMATE_LAYER_FILES | JAPAN_FILES | PLANT_OUTLINE_FILES | PLANT_CATALOG_FILES
+} | CLIMATE_LAYER_FILES | JAPAN_FILES | PLANT_OUTLINE_FILES | PLANT_CATALOG_FILES | PLACE_SEARCH_FILES
 DEPLOY_FILES = {
     "404.html",
     "app.js",
@@ -92,7 +94,7 @@ DEPLOY_FILES = {
     "sitemap.xml",
     "styles.css",
     "data/climate-layers/manifest.json",
-} | CLIMATE_LAYER_FILES | JAPAN_FILES | PLANT_OUTLINE_FILES | PLANT_CATALOG_FILES
+} | CLIMATE_LAYER_FILES | JAPAN_FILES | PLANT_OUTLINE_FILES | PLANT_CATALOG_FILES | PLACE_SEARCH_FILES
 
 
 def require(condition: bool, message: str) -> None:
@@ -511,6 +513,25 @@ console.log("COMPARISON_MATH_OK");
     subprocess.run(["node", "-e", program, str(ROOT / "app.js")], check=True)
 
 
+def verify_place_search() -> None:
+    index = json.loads((ROOT / "data/place-search-index.json").read_text())
+    japan = index["japan"]
+    world = []
+    for filename in index["worldFiles"]:
+        world.extend(json.loads((ROOT / "data" / filename).read_text()))
+    require(len(world) == index["worldCount"], "place search count mismatch")
+    require(len(japan) >= 1700 and len(world) >= 180000, "incomplete place search sources")
+    rows = japan + world
+    require(len({row[0] for row in rows}) == len(rows), "duplicate place ID")
+    require(all(len(row) == 6 and row[1] and row[2] and isinstance(row[5], str)
+                and -85.05 <= row[3] <= 85.05 and -180 <= row[4] <= 180
+                for row in rows), "invalid place search record")
+    require(any(row[0] == "jp-121029" and row[2] == "千葉県千葉市花見川区" and 35.6 < row[3] < 35.8
+                and 140 < row[4] < 140.2 for row in japan), "Hanamigawa ward is missing")
+    require(any(row[0] == 2643743 and "ロンドン" in row[5].split(",") for row in world),
+            "world place alternate name is missing")
+
+
 def verify_plant_catalog(app: str) -> None:
     catalog = load_plant_catalog(ROOT)
     outlines = json.loads((ROOT / 'data/plant-outlines.json').read_text())
@@ -527,6 +548,15 @@ def verify_plant_catalog(app: str) -> None:
         outlines['plantKeys'].update(chunk['plantKeys'])
         outlines['outlines'].update(chunk['outlines'])
     plants = catalog['plants']
+    representatives = catalog['representativeLocations']
+    require(set(representatives) <= {p['id'] for p in plants if p['originKind'] == 'native'}
+            and set(representatives) <= set(outlines['plantKeys']), "plant representative has no native range")
+    require('monstera-deliciosa' in representatives, "Monstera representative is missing")
+    require(all(-85.05 <= point['latitude'] <= 85.05 and -180 <= point['longitude'] <= 180
+                and isinstance(point['occurrenceKey'], int) and point['occurrenceKey'] > 0
+                and re.fullmatch(r'[A-Z]{2}', point['countryCode'])
+                and re.fullmatch(r'[0-9a-f-]{36}', point['datasetKey'])
+                for point in representatives.values()), "invalid plant representative")
     require(catalog['schema'] == outlines['schema'] == 1, 'plant schema mismatch')
     require(catalog['regionSource']['sha256'] == outlines['sourceSha256'], 'plant boundary source mismatch')
     require(catalog['ratingMethod']['kind'] == 'editorial-provisional', 'rating method missing')
@@ -738,6 +768,7 @@ def main() -> None:
     require(hashlib.sha256((ROOT / 'vendor/d3-geo-3.1.1.min.js').read_bytes()).hexdigest() == '23e574f1e8d4716d622bce45356a379b66a277162b145f5f147e4c8daefb73d2', "projection vendor bytes changed")
     require(hashlib.sha256((ROOT / 'vendor/d3-geo-LICENSE.txt').read_bytes()).hexdigest() == '3e3edc1224eec9c39cd26491a21304a62883c1e5b6a65c5283ccc7a6cc94baee', "projection vendor bytes changed")
     require(PUBLIC_FILES == DEPLOY_FILES, 'public verifier file allowlist differs from deployment')
+    verify_place_search()
     actual_files = {
         path.relative_to(ROOT).as_posix()
         for path in ROOT.rglob("*")
@@ -762,8 +793,8 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261111-catalog-identity-audit\" defer></script>" in index, "versioned local deferred script missing")
-    require('href="./styles.css?v=20261111-plant-origin-link"' in index, "versioned local stylesheet missing")
+    require("<script src=\"./app.js?v=20261112-location-tools\" defer></script>" in index, "versioned local deferred script missing")
+    require('href="./styles.css?v=20261112-location-tools"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
     require("耐寒性・栽培可否の判定ではありません" in index, "reference rating disclaimer missing")
@@ -802,7 +833,8 @@ def main() -> None:
     require(index.count("data-result-resize") == 4, "four floating-panel resize handles are required")
     require('role="tablist"' in index and index.count("data-result-tab=") == 6, "six result-panel tabs are required")
     require(index.count("data-result-page=") == 6, "six result-panel pages are required")
-    for control_id in ("setReference", "toggleComparison", "referenceShortLabel", "clearReference", "swapLocations", "referenceLocation", "currentLocation"):
+    for control_id in ("setReference", "toggleComparison", "referenceShortLabel", "clearReference",
+                       "swapLocations", "resetLocations", "resetMapLocations", "referenceLocation", "currentLocation"):
         require(f'id="{control_id}"' in index, f"comparison control missing: {control_id}")
     for result_page in ("overview", "temperature", "precipitation", "solar", "humidity", "monthly"):
         require(f'data-result-tab="{result_page}"' in index, f"result tab missing: {result_page}")
