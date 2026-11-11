@@ -9,6 +9,7 @@ import json
 import re
 import struct
 import subprocess
+import unicodedata
 from pathlib import Path
 from unittest.mock import patch
 
@@ -584,6 +585,20 @@ def verify_plant_catalog(app: str) -> None:
                     and query.split()[-1] == p['scientificName'].split()[-1],
                     'a synonymized colour form must not inherit a whole-species native range')
     market = [p for p in additions if p['taxonRank'] == 'market-name']
+    # Seller titles belong in evidence, including when they contain packaging
+    # details. Display names and search aliases must describe the plant.
+    product_only = re.compile(
+        r'曲がり樹形|かえるのお庭|オアシス苗|陶器マットブラック塗装鉢'
+        r'|^オリジナルプランツポット|^ハイドロ(?:カルチャー用|苗\d+φ)'
+        r'|^育苗用培地\s+オアシスホルティキューブ|^キッチンプランター専用受け皿'
+        r'|^西濃運輸お届け$|^商品画像の花色をお届け$'
+        r'|^ジフィーセブンC苗\s|^セル苗\s|^連結パック苗\s'
+        r'|お徳用パック\)?$|\s\d+粒$|\d+日発送予定$'
+        r'|^ポトス(?:\s+ヘゴ|\(斑入り\)\s+タワー)$'
+    )
+    product_labels = [(p['id'], label) for p in plants for label in (p['name'], *p['aliases'])
+                      if product_only.search(unicodedata.normalize('NFKC', label))]
+    require(not product_labels, f'product-only labels must not appear in plant names or aliases: {product_labels[:8]}')
     require(market and all(p['sourceUrl'].startswith(market_sources) and p['sourceLabel']
                 and p['reference']['basis'] == 'market' for p in market), 'market-name provenance missing')
     wcvp = catalog['taxonomySources']['WCVP']
@@ -747,7 +762,7 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261111-plant-origin-link\" defer></script>" in index, "versioned local deferred script missing")
+    require("<script src=\"./app.js?v=20261111-catalog-identity-audit\" defer></script>" in index, "versioned local deferred script missing")
     require('href="./styles.css?v=20261111-plant-origin-link"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")

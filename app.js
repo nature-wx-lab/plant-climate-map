@@ -1428,11 +1428,12 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      const catalog = await fetchCatalogJSON("./data/plants.json?v=20261027-catalog-43000");
+      const catalogVersion = "20261111-catalog-identity-audit";
+      const catalog = await fetchCatalogJSON(`./data/plants.json?v=${catalogVersion}`);
       const plantFiles = catalog.plantFiles ?? [];
       if (!Array.isArray(plantFiles) || new Set(plantFiles).size !== plantFiles.length
           || plantFiles.some((name) => typeof name !== "string" || !/^plants-(?:[2-9]|[1-9][0-9]+)\.json$/.test(name))) throw new Error("植物カタログファイル名が不正です");
-      const plantChunks = await Promise.all(plantFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=20261027-catalog-43000`)));
+      const plantChunks = await Promise.all(plantFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=${catalogVersion}`)));
       if (!Array.isArray(catalog.plants) || plantChunks.some((chunk) => chunk.schema !== catalog.schema || !Array.isArray(chunk.plants))) throw new Error("植物カタログ形式が不正です");
       catalog.plants = catalog.plants.concat(...plantChunks.map((chunk) => chunk.plants));
       if ((catalog.plantCount !== undefined && catalog.plantCount !== catalog.plants.length)
