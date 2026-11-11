@@ -1602,7 +1602,7 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      const catalogVersion = "20261112-plant-representatives";
+      const catalogVersion = "20261112-catalog-review";
       const catalog = await fetchCatalogJSON(`./data/plants.json?v=${catalogVersion}`);
       const plantFiles = catalog.plantFiles ?? [];
       if (!Array.isArray(plantFiles) || new Set(plantFiles).size !== plantFiles.length
