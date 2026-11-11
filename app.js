@@ -348,6 +348,7 @@
     plantRepresentative: document.getElementById("plantRepresentative"),
     plantRepresentativeNote: document.getElementById("plantRepresentativeNote"),
     plantRepresentativeSource: document.getElementById("plantRepresentativeSource"),
+    plantRepresentativeRelationSource: document.getElementById("plantRepresentativeRelationSource"),
     placeSearch: document.getElementById("placeSearch"),
     placeStatus: document.getElementById("placeStatus"),
     placeResults: document.getElementById("placeResults"),
@@ -488,6 +489,8 @@
     plantResultLimit: 100,
     plantOutlines: null,
     plantRepresentatives: new Map(),
+    regionalPlantRepresentatives: new Map(),
+    selectedPlantRepresentative: null,
     placeIndex: null,
     placeMatches: [],
     placePage: 0,
@@ -1524,14 +1527,31 @@
     elements.plantOriginInfo.hidden = false;
     elements.selectedPlantName.textContent = plant.name;
     elements.selectedPlantScientific.textContent = plant.scientificName || "流通名で掲載";
-    const representative = state.plantRepresentatives.get(id);
+    const referencePlant = related || plant;
+    const outlineKey = state.plantOutlines.plantKeys[referencePlant.id];
+    const specimen = state.plantRepresentatives.get(referencePlant.id);
+    const representative = specimen || state.regionalPlantRepresentatives.get(outlineKey);
+    state.selectedPlantRepresentative = representative;
     elements.plantRepresentative.hidden = !representative;
+    elements.plantRepresentative.textContent = related ? "関連種の参考地点を選択" : "代表地点を選択";
     elements.plantRepresentativeSource.hidden = !representative;
-    elements.plantRepresentativeNote.textContent = representative
-      ? "原産地域内の標本記録から選んだ気候メッシュ"
-      : "代表地点は未設定です";
+    elements.plantRepresentativeRelationSource.hidden = !related || !representative;
+    if (related && representative) {
+      elements.plantRepresentativeRelationSource.href = plant.relatedEvidenceUrl;
+    } else {
+      elements.plantRepresentativeRelationSource.removeAttribute("href");
+    }
     if (representative) {
-      elements.plantRepresentativeSource.href = `https://www.gbif.org/occurrence/${representative.occurrenceKey}`;
+      const basis = specimen ? "原産地域内の標本記録"
+        : referencePlant.originKind === "cultigen" ? "成立地域内から選んだ1地点"
+          : "文献の原産地域内から選んだ1地点（標本未確認）";
+      elements.plantRepresentativeNote.textContent = related ? `${related.name}の気候を参照｜${basis}` : basis;
+      elements.plantRepresentativeSource.textContent = specimen ? "標本記録（GBIF）" : "分布・成立地域の出典";
+      elements.plantRepresentativeSource.href = specimen
+        ? `https://www.gbif.org/occurrence/${specimen.occurrenceKey}` : referencePlant.sourceUrl;
+    } else {
+      elements.plantRepresentativeNote.textContent = "代表地点未設定。由来を確認できる資料が未登録です。";
+      elements.plantRepresentativeSource.removeAttribute("href");
     }
     elements.plantReferenceStars.textContent = plantStars(plant);
     elements.plantReferenceStars.setAttribute("aria-label", `5段階中${plant.reference.stars}`);
@@ -1582,7 +1602,7 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      const catalogVersion = "20261112-location-tools";
+      const catalogVersion = "20261112-plant-representatives";
       const catalog = await fetchCatalogJSON(`./data/plants.json?v=${catalogVersion}`);
       const plantFiles = catalog.plantFiles ?? [];
       if (!Array.isArray(plantFiles) || new Set(plantFiles).size !== plantFiles.length
@@ -1624,6 +1644,7 @@
         plant.searchText = normalizePlantSearch([plant.name, plant.scientificName, ...plant.aliases, pickupById.get(plant.id)?.name].join(" "));
       }
       state.plantRepresentatives = new Map(Object.entries(catalog.representativeLocations ?? {}));
+      state.regionalPlantRepresentatives = new Map(Object.entries(catalog.regionalRepresentativeLocations ?? {}));
       state.plants = catalog.plants;
       state.pickupPlants = catalog.categories.flatMap(({ id }) =>
         (PLANT_PICKUP_GROUPS[id] ?? []).map(([plantId]) => plantsById.get(plantId))).filter(Boolean);
@@ -3427,7 +3448,7 @@
   });
   elements.focusPlantOrigin.addEventListener("click", focusPlantOrigin);
   elements.plantRepresentative.addEventListener("click", () => {
-    const representative = state.plantRepresentatives.get(state.selectedPlant?.id);
+    const representative = state.selectedPlantRepresentative;
     if (!representative) return;
     if (window.matchMedia("(max-width: 760px)").matches && elements.layerPanel.classList.contains("is-open")) {
       elements.toggleLayerPanel.click();

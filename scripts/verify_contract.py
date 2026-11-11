@@ -59,6 +59,7 @@ SOURCE_FILES = {
     "scripts/build_deployment_manifest.py",
     "scripts/build_climate_layers.py",
     "scripts/build_plant_outlines.py",
+    "scripts/build_plant_representatives.py",
     "scripts/build_geography.py",
     "scripts/build_place_search.py",
     "scripts/build_japan_1km.py",
@@ -557,6 +558,12 @@ def verify_plant_catalog(app: str) -> None:
                 and re.fullmatch(r'[A-Z]{2}', point['countryCode'])
                 and re.fullmatch(r'[0-9a-f-]{36}', point['datasetKey'])
                 for point in representatives.values()), "invalid plant representative")
+    regional_points = catalog['regionalRepresentativeLocations']
+    expected_ranges = {'-'.join(plant['regionCodes']) for plant in plants if plant['regionCodes']}
+    require(set(regional_points) == expected_ranges, "a catalogued plant distribution is missing a regional point")
+    require(all(point['regionCode'] in region.split('-')
+                and -85 <= point['latitude'] <= 85 and -180 <= point['longitude'] <= 180
+                for region, point in regional_points.items()), "invalid regional representative coordinates or source")
     require(catalog['schema'] == outlines['schema'] == 1, 'plant schema mismatch')
     require(catalog['regionSource']['sha256'] == outlines['sourceSha256'], 'plant boundary source mismatch')
     require(catalog['ratingMethod']['kind'] == 'editorial-provisional', 'rating method missing')
@@ -793,7 +800,7 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261112-place-disclosure\" defer></script>" in index, "versioned local deferred script missing")
+    require("<script src=\"./app.js?v=20261112-plant-representatives\" defer></script>" in index, "versioned local deferred script missing")
     require('href="./styles.css?v=20261112-place-disclosure"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
