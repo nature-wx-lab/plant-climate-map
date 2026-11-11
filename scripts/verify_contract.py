@@ -526,8 +526,8 @@ def verify_place_search() -> None:
     require(all(len(row) == 6 and row[1] and row[2] and isinstance(row[5], str)
                 and -85.05 <= row[3] <= 85.05 and -180 <= row[4] <= 180
                 for row in rows), "invalid place search record")
-    require(any(row[0] == "jp-121029" and row[2] == "千葉県千葉市花見川区" and 35.6 < row[3] < 35.8
-                and 140 < row[4] < 140.2 for row in japan), "Hanamigawa ward is missing")
+    require(any(row[0] == "jp-131016" and row[2] == "東京都千代田区" and 35.6 < row[3] < 35.8
+                and 139.7 < row[4] < 139.8 for row in japan), "Chiyoda ward is missing")
     require(any(row[0] == 2643743 and "ロンドン" in row[5].split(",") for row in world),
             "world place alternate name is missing")
 
@@ -793,8 +793,8 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261112-location-tools\" defer></script>" in index, "versioned local deferred script missing")
-    require('href="./styles.css?v=20261112-location-tools"' in index, "versioned local stylesheet missing")
+    require("<script src=\"./app.js?v=20261112-place-disclosure\" defer></script>" in index, "versioned local deferred script missing")
+    require('href="./styles.css?v=20261112-place-disclosure"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")
     require("耐寒性・栽培可否の判定ではありません" in index, "reference rating disclaimer missing")

@@ -18,13 +18,13 @@
   <meta name="twitter:card" content="summary">
   <title>植物気候マップ｜Nature Wx Lab</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2318675b'/%3E%3Cpath d='M32 51V28M32 35C19 34 14 25 14 14c12 0 20 6 18 21zm0-2c13-1 18-10 18-21-12 0-20 6-18 21z' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css?v=20261112-location-tools">
+  <link rel="stylesheet" href="./styles.css?v=20261112-place-disclosure">
   <script src="./vendor/d3-array-3.2.4.min.js" defer></script>
   <script src="./vendor/d3-geo-3.1.1.min.js" defer></script>
   <script src="./geography.js?v=20261003-label-spacing" defer></script>
   <script src="./globe.js?v=20261014-globe-space" defer></script>
   <script src="./map-context.js?v=20261003-context-maps" defer></script>
-  <script src="./app.js?v=20261112-location-tools" defer></script>
+  <script src="./app.js?v=20261112-place-disclosure" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -73,13 +73,13 @@
     <aside id="layerPanel" class="layer-panel" aria-label="地点と植物を選ぶ">
       <div class="layer-panel-heading">
         <button id="toggleLayerPanel" type="button" aria-controls="plantPicker" aria-expanded="false">地点・植物を選ぶ</button>
-        <span id="placeSearchHeading">地点検索</span>
         <button id="resetMapLocations" class="map-reset-locations" type="button" title="地点Aと地点Bの選択を解除する" disabled>A・Bをリセット</button>
       </div>
 
       <div id="plantPicker" class="plant-picker">
-        <section class="place-search" aria-labelledby="placeSearchHeading">
-          <label class="search-field" for="placeSearch"><span class="sr-only">地点名で検索</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><input id="placeSearch" type="search" placeholder="地点名で検索（例：花見川区）" autocomplete="off"></label>
+        <details id="placeBrowser" class="place-search" open>
+          <summary id="placeSearchHeading">地点検索</summary>
+          <label class="search-field" for="placeSearch"><span class="sr-only">地点名で検索</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><input id="placeSearch" type="search" placeholder="地点名で検索（例：千代田区）" autocomplete="off"></label>
           <p id="placeStatus" class="plant-result-count" role="status" hidden></p>
           <div id="placeChoice" class="place-choice" hidden>
             <strong id="placeChoiceLabel"></strong>
@@ -96,7 +96,7 @@
             <p>日本の市区町村・行政区と、世界の都市・集落を検索できます。収録された別名にも部分一致します。</p>
             <p><a href="https://dataset.address-br.digital.go.jp/" target="_blank" rel="noopener noreferrer">デジタル庁の市区町村マスター・位置参照</a>（<a href="https://www.digital.go.jp/policies/base_registry_address_tos" target="_blank" rel="noopener noreferrer">PDL1.0</a>）、<a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a>（<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>）をもとにNatureWxLabが加工。</p>
           </details>
-        </section>
+        </details>
         <details id="plantBrowser" class="plant-browser">
           <summary id="plantPickerHeading">植物一覧 <small id="plantCatalogCount">読込中</small></summary>
           <div class="plant-filters">
