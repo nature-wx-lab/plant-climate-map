@@ -330,6 +330,8 @@
     plantResultCount: document.getElementById("plantResultCount"),
     plantResults: document.getElementById("plantResults"),
     plantShowMore: document.getElementById("plantShowMore"),
+    plantRelatedInfo: document.getElementById("plantRelatedInfo"),
+    plantRelatedNote: document.getElementById("plantRelatedNote"),
     plantRelated: document.getElementById("plantRelated"),
     selectedPlant: document.getElementById("selectedPlant"),
     selectedPlantName: document.getElementById("selectedPlantName"),
@@ -1358,6 +1360,12 @@
     const pickupName = elements.plantCategory.value === "pickup" ? pickupById.get(id)?.name : null;
     const plant = pickupName ? { ...catalogPlant, name: pickupName } : catalogPlant;
     const outline = state.plantOutlines.outlines[state.plantOutlines.plantKeys[id]];
+    const related = plant.relatedPlantId && state.plants.find((candidate) => candidate.id === plant.relatedPlantId);
+    // A related species alone can also represent one side of a hybrid. Require
+    // an explicit cultivar name under the same species before saying "cultivar of".
+    const cultivarPrefix = related?.scientificName + " ";
+    const hasCultivarName = related?.taxonRank === "species" && plant.aliases.some((alias) =>
+      alias.startsWith(cultivarPrefix) && /^(?:'[^']+'|‘[^’]+’)$/.test(alias.slice(cultivarPrefix.length)));
     state.selectedPlant = plant;
     state.plantOriginBounds = outline ? nativeBounds([{ geometry: { coordinates: outline.rings } }]) : null;
     state.plantVisible = Boolean(outline);
@@ -1373,7 +1381,9 @@
     elements.selectedPlantScientific.textContent = plant.scientificName || "流通名で掲載";
     elements.plantReferenceStars.textContent = plantStars(plant);
     elements.plantReferenceStars.setAttribute("aria-label", `5段階中${plant.reference.stars}`);
-    elements.plantReferenceReason.textContent = plant.reference.reason;
+    elements.plantReferenceReason.textContent = hasCultivarName
+      ? "種の原産地域の気候は参考にできます。品種固有の耐性や管理方法は販売元の栽培資料で確認してください。"
+      : plant.reference.reason;
     const kind = plant.taxonRank === "market-name" ? "園芸品種・流通名" : plant.taxonRank === "horticultural-group" ? "園芸品種群" : plant.taxonRank === "variety" ? "自然変種" : plant.taxonRank === "subspecies" ? "亜種" : plant.originKind === "cultigen" ? "栽培化した種" : plant.taxonRank === "cultivar" ? "園芸品種（原種未特定）" : "原種・種全体";
     elements.plantTaxonNote.textContent = `${kind}${plant.note ? " · " + plant.note : ""}`;
     elements.plantSource.href = plant.sourceUrl;
@@ -1383,8 +1393,14 @@
     elements.plantOriginLabel.textContent = outline
       ? `黒い太線：${plant.originKind === "cultigen" ? "栽培化した種の成立地域" : "原産地域"}の目安`
       : plant.taxonRank === "market-name" ? "園芸品種・流通形には野生の原産地域を設定していません" : plant.taxonRank === "horticultural-group" ? "園芸品種群のため、単一の原産地域の線は表示しません" : "原種未特定のため、原産地域の線は表示しません";
-    elements.plantRelated.hidden = !plant.relatedPlantId;
-    elements.plantRelated.dataset.plantId = plant.relatedPlantId || "";
+    elements.plantRelatedInfo.hidden = !related;
+    if (related) {
+      elements.plantRelatedNote.textContent = hasCultivarName
+        ? `${plant.name}は${related.name}の園芸品種です。原産地域の気候は、育てる環境を考える手がかりになります。`
+        : "販売元が示す関連種の原産地域を、育てる環境の参考にできます。";
+      elements.plantRelated.textContent = `${related.name}の原産地域を見る`;
+      elements.plantRelated.dataset.plantId = related.id;
+    }
     updatePlantOrigin();
     // Keep the picker, scroll position and keyboard focus stable for rapid switching.
     elements.plantResults.querySelectorAll("button[data-plant-id]").forEach((button) => {
@@ -3235,7 +3251,11 @@
     state.plantResultLimit += 100;
     renderPlantResults();
   });
-  elements.plantRelated.addEventListener("click", () => selectPlant(elements.plantRelated.dataset.plantId));
+  elements.plantRelated.addEventListener("click", () => {
+    selectPlant(elements.plantRelated.dataset.plantId);
+    focusPlantOrigin();
+    elements.focusPlantOrigin.focus({ preventScroll: true });
+  });
   elements.plantResults.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-plant-id]");
     if (button && elements.plantResults.contains(button)) selectPlant(button.dataset.plantId);

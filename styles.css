@@ -236,7 +236,10 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .selected-plant-heading small { color: #6b7c73; font-size: 0.68rem; font-style: italic; }
 .origin-line-key { width: 19px; display: inline-block; margin-right: 5px; border-top: 3.5px solid #111; vertical-align: middle; }
 .plant-origin-actions { display: flex; align-items: center; gap: 6px; margin-top: 9px; }
-.plant-origin-actions button { min-height: 36px; padding: 6px 8px; border: 1px solid #c6d8ce; border-radius: 5px; color: #2c5945; background: #fff; font-size: 0.67rem; font-weight: 700; cursor: pointer; }
+.plant-origin-actions button, #plantRelated { min-height: 36px; padding: 6px 8px; border: 1px solid #c6d8ce; border-radius: 5px; color: #2c5945; background: #fff; font-size: 0.67rem; font-weight: 700; cursor: pointer; }
+.plant-related-info { margin-top: 8px; }
+.plant-related-info p { margin: 0 0 5px; color: #536c5e; font-size: 0.72rem; line-height: 1.5; overflow-wrap: anywhere; }
+#plantRelated { max-width: 100%; background: #eef6f0; text-align: left; overflow-wrap: anywhere; }
 #togglePlantOrigin[aria-pressed="true"] { background: #eef6f0; border-color: #8eaf9a; }
 #togglePlantOrigin:disabled { color: #76827c; cursor: default; }
 #togglePlantOrigin:disabled .origin-line-key { border-color: #a6b2aa; }
@@ -1325,7 +1328,7 @@ th small { color: #71827e; font-size: 0.5rem; font-weight: 600; }
   .plant-browser summary { min-height: 32px; }
   .plant-results, .plant-picker:has(#selectedPlant:not([hidden])) .plant-results { max-height: 174px; }
   .plant-result { min-height: 54px; padding: 8px 10px; }
-  .plant-origin-actions button { min-height: 40px; }
+  .plant-origin-actions button, #plantRelated { min-height: 40px; }
   .plant-detail summary, .plant-rating-guide summary { min-height: 40px; }
   .plant-detail-body { max-height: 150px; }
   .plant-source-links a { display: inline-flex; min-height: 40px; align-items: center; }

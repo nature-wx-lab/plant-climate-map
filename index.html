@@ -18,13 +18,13 @@
   <meta name="twitter:card" content="summary">
   <title>植物気候マップ｜Nature Wx Lab</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2318675b'/%3E%3Cpath d='M32 51V28M32 35C19 34 14 25 14 14c12 0 20 6 18 21zm0-2c13-1 18-10 18-21-12 0-20 6-18 21z' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css?v=20261110-plant-pickup">
+  <link rel="stylesheet" href="./styles.css?v=20261111-plant-origin-link">
   <script src="./vendor/d3-array-3.2.4.min.js" defer></script>
   <script src="./vendor/d3-geo-3.1.1.min.js" defer></script>
   <script src="./geography.js?v=20261003-label-spacing" defer></script>
   <script src="./globe.js?v=20261014-globe-space" defer></script>
   <script src="./map-context.js?v=20261003-context-maps" defer></script>
-  <script src="./app.js?v=20261110-plant-pickup-by-genre" defer></script>
+  <script src="./app.js?v=20261111-plant-origin-link" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -91,9 +91,12 @@
           <div class="plant-origin-actions">
             <button id="togglePlantOrigin" type="button" aria-pressed="false" aria-controls="plantOriginLayer"><span class="origin-line-key" aria-hidden="true"></span><span id="plantChoiceState">線を表示</span></button>
             <button id="focusPlantOrigin" type="button">原産地へ移動</button>
-            <button id="plantRelated" type="button" hidden>関連する種を表示</button>
           </div>
           <div id="plantOriginInfo" class="plant-origin-info" hidden><p id="plantOriginLabel">黒い太線：原産地域の目安</p><p id="plantOriginCaveat" class="origin-caveat">地域全域の自生を示す線ではありません。囲み内をクリックして気候を確認。</p></div>
+          <div id="plantRelatedInfo" class="plant-related-info" hidden>
+            <p id="plantRelatedNote"></p>
+            <button id="plantRelated" type="button" aria-describedby="plantRelatedNote"></button>
+          </div>
           <details class="plant-detail"><summary><span class="plant-selected-rating"><span class="plant-rating-label">原産地の参考度</span><b id="plantReferenceStars"></b></span><span>解説・出典</span></summary><div class="plant-detail-body">
             <p class="plant-reference">気候の参考度（暫定）</p><p id="plantReferenceReason" class="plant-reference-reason"></p><p id="plantTaxonNote" class="plant-taxon-note"></p>
             <div class="plant-source-links"><a id="plantSource" target="_blank" rel="noopener noreferrer">分布の出典：Kew</a><a id="plantReferenceSource" target="_blank" rel="noopener noreferrer">比較のポイントの出典</a></div>
