@@ -155,6 +155,20 @@ def verify_plant_chunk_loading() -> None:
                 pass
             else:
                 raise AssertionError('inherited range or invalid related taxon accepted')
+        documents[str(root/'data/plants-2.json')] = {'schema':1,'plants':[market]}
+        point = {'basis':'species', 'latitude':37, 'longitude':127, 'note':'Reference species range',
+                 'sourceUrl':'https://example.org/range', 'evidenceUrl':'https://example.org/identity'}
+        documents[str(root/'data/plants.json')] = main | {'referenceLocations': {'retail': point}}
+        require(load_plant_catalog(root)['referenceLocations']['retail'] == point, 'documented point rejected')
+        for invalid in ({'missing': point}, {'retail': point | {'latitude': 90}}, {'retail': point | {'basis': 'guess'}}):
+            documents[str(root/'data/plants.json')] = main | {'referenceLocations': invalid}
+            try:
+                load_plant_catalog(root)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError('invalid documented reference point accepted')
+        documents[str(root/'data/plants.json')] = main
         del documents[str(root/'data/plants-2.json')]
         try:
             load_plant_catalog(root)
@@ -195,8 +209,13 @@ async function check(change={}) {
  assert.deepEqual(good.elements.plantCategory.options.map(option=>option.textContent),['すべて（2）','おすすめピックアップ（2）']);
  assert.ok(good.state.pickupPlants[0].searchText.includes('ピックアップ'));
  const retail={...plant('retail'),scientificName:'',taxonRank:'market-name',originKind:'unresolved',sourceLabel:'Nursery',nativeAreas:[],regionCodes:[],reference:{stars:1,reason:'market identity',sourceUrl:'https://example.org/plant'}};
+ const point={basis:'cultivar-origin',latitude:36,longitude:138,note:'Breeding site',sourceUrl:'https://example.org/source',evidenceUrl:'https://example.org/map'};
  assert.equal((await check({shard:{plants:[retail]}})).state.plants.length,2);
  assert.equal((await check({shard:{plants:[{...retail,relatedPlantId:'first',relatedEvidenceUrl:'https://example.org/plant'}]}})).state.plants.length,2);
+ const documented=await check({main:{referenceLocations:{retail:point}},shard:{plants:[retail]}});
+ assert.deepEqual(documented.state.plantReferenceLocations.get('retail'),point);
+ const unsafePoint=await check({main:{referenceLocations:{retail:{...point,sourceUrl:'http://example.org'}}},shard:{plants:[retail]}});
+ assert.equal(unsafePoint.state.plants.length,0);
  for(const mutation of [{regionCodes:['KOR']},{nativeAreas:['Korea']},{originKind:'native'},{sourceLabel:''},{relatedPlantId:'missing',relatedEvidenceUrl:'https://example.org/plant'},{relatedPlantId:'retail',relatedEvidenceUrl:'https://example.org/plant'}]) {
   const bad=await check({shard:{plants:[{...retail,...mutation}]}});assert.equal(bad.state.plants.length,0);assert.equal(bad.rendered,0);
  }
@@ -800,7 +819,7 @@ def main() -> None:
     require("Content-Security-Policy" in index, "CSP meta is missing")
     require("connect-src 'self' https://power.larc.nasa.gov" in index, "POWER must be the only external connection")
     require("'unsafe-inline'" not in index and "'unsafe-eval'" not in index, "unsafe CSP directive")
-    require("<script src=\"./app.js?v=20261112-catalog-review\" defer></script>" in index, "versioned local deferred script missing")
+    require(re.search(r'<script src="\./app\.js\?v=[\w-]+" defer></script>', index), "versioned local deferred script missing")
     require('href="./styles.css?v=20261112-place-disclosure"' in index, "versioned local stylesheet missing")
     require(all(f'id="{key}"' in index for key in ('plantSearch','plantCategory','plantResults','plantOriginLayer','plantReferenceStars')), "plant search, categories, outline or ratings missing")
     require("地域全域の自生を示す線ではありません" in index, "native-region boundary caveat missing")

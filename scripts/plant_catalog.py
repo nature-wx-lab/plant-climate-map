@@ -47,5 +47,17 @@ def load_plant_catalog(root: Path) -> dict:
         if related and (related == plant['id'] or not by_id.get(related, {}).get('regionCodes')
                         or not str(plant.get('relatedEvidenceUrl', '')).startswith('https://')):
             raise ValueError('Invalid documented related taxon')
+    points = catalog.get('referenceLocations', {})
+    if not isinstance(points, dict) or any(
+        by_id.get(plant_id, {}).get('taxonRank') != 'market-name' or not isinstance(point, dict)
+        or point.get('basis') not in ('species', 'cultivar-origin')
+        or type(point.get('latitude')) not in (int, float) or not -85 <= point['latitude'] <= 85
+        or type(point.get('longitude')) not in (int, float) or not -180 <= point['longitude'] <= 180
+        or not isinstance(point.get('note'), str) or not point['note'].strip()
+        or any(not isinstance(point.get(key), str) or not point[key].startswith('https://')
+               for key in ('sourceUrl', 'evidenceUrl'))
+        for plant_id, point in points.items()
+    ):
+        raise ValueError('Invalid documented plant reference location')
     catalog['plants'] = plants
     return catalog
