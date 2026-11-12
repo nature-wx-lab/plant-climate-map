@@ -1614,7 +1614,7 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      const catalogVersion = "20261112-catalog-references";
+      const catalogVersion = "20261112-catalog-reference-places";
       const catalog = await fetchCatalogJSON(`./data/plants.json?v=${catalogVersion}`);
       const plantFiles = catalog.plantFiles ?? [];
       if (!Array.isArray(plantFiles) || new Set(plantFiles).size !== plantFiles.length
@@ -1645,6 +1645,7 @@
             || !Number.isFinite(point.latitude) || Math.abs(point.latitude) > 85
             || !Number.isFinite(point.longitude) || Math.abs(point.longitude) > 180
             || typeof point.note !== "string" || !point.note.trim()
+            || (point.placeLabel !== undefined && (typeof point.placeLabel !== "string" || !point.placeLabel.trim()))
             || ![point.sourceUrl, point.evidenceUrl].every((url) => typeof url === "string" && /^https:\/\//.test(url)))) {
         throw new Error("植物の参照地点が不正です");
       }
@@ -3477,7 +3478,11 @@
     if (window.matchMedia("(max-width: 760px)").matches && elements.layerPanel.classList.contains("is-open")) {
       elements.toggleLayerPanel.click();
     }
-    selectClimateLocation(representative.longitude, representative.latitude, { center: true });
+    const label = representative.placeLabel;
+    selectClimateLocation(representative.longitude, representative.latitude, {
+      center: true,
+      place: label ? { label, name: label } : null,
+    });
   });
   elements.placeSearch.addEventListener("input", (event) => {
     if (!event.isComposing) searchPlaces();

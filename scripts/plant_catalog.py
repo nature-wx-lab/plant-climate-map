@@ -54,6 +54,7 @@ def load_plant_catalog(root: Path) -> dict:
         or type(point.get('latitude')) not in (int, float) or not -85 <= point['latitude'] <= 85
         or type(point.get('longitude')) not in (int, float) or not -180 <= point['longitude'] <= 180
         or not isinstance(point.get('note'), str) or not point['note'].strip()
+        or ('placeLabel' in point and (not isinstance(point['placeLabel'], str) or not point['placeLabel'].strip()))
         or any(not isinstance(point.get(key), str) or not point[key].startswith('https://')
                for key in ('sourceUrl', 'evidenceUrl'))
         for plant_id, point in points.items()
