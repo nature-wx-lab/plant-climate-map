@@ -48,9 +48,14 @@ def load_plant_catalog(root: Path) -> dict:
                         or not str(plant.get('relatedEvidenceUrl', '')).startswith('https://')):
             raise ValueError('Invalid documented related taxon')
     points = catalog.get('referenceLocations', {})
+    reference_bases = {
+        'market-name': ('species', 'cultivar-origin', 'cultivar-reference'),
+        'species': ('native-specimen',),
+        'horticultural-group': ('group-origin',),
+    }
     if not isinstance(points, dict) or any(
-        by_id.get(plant_id, {}).get('taxonRank') != 'market-name' or not isinstance(point, dict)
-        or point.get('basis') not in ('species', 'cultivar-origin')
+        not isinstance(point, dict)
+        or point.get('basis') not in reference_bases.get(by_id.get(plant_id, {}).get('taxonRank'), ())
         or type(point.get('latitude')) not in (int, float) or not -85 <= point['latitude'] <= 85
         or type(point.get('longitude')) not in (int, float) or not -180 <= point['longitude'] <= 180
         or not isinstance(point.get('note'), str) or not point['note'].strip()

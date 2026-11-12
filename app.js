@@ -1535,12 +1535,19 @@
     const representative = documented || specimen || state.regionalPlantRepresentatives.get(outlineKey);
     state.selectedPlantRepresentative = representative;
     elements.plantRepresentative.hidden = !representative;
-    elements.plantRepresentative.textContent = documented?.basis === "cultivar-origin" ? "作出地の気候を比較"
-      : documented ? "参照種の気候を比較" : related ? "関連種の参考地点を選択" : "代表地点を選択";
+    const documentedLabels = {
+      species: ["参照種の気候を比較", "参照地点の出典", "参照種を確認した資料"],
+      "cultivar-origin": ["作出・発見地の気候を比較", "作出・発見地の出典", "地点を確認した資料"],
+      "cultivar-reference": ["栽培・育成の参考地点を比較", "参照地点の出典", "地点を確認した資料"],
+      "native-specimen": ["野生標本の地点を比較", "標本記録（GBIF）", "分布の出典"],
+      "group-origin": ["成立地域の気候を比較", "成立地域の出典", "地点を確認した資料"],
+    };
+    const labels = documented && documentedLabels[documented.basis];
+    elements.plantRepresentative.textContent = labels?.[0] ??
+      (related ? "関連種の参考地点を選択" : "代表地点を選択");
     elements.plantRepresentativeSource.hidden = !representative;
     elements.plantRepresentativeRelationSource.hidden = !documented && (!related || !representative);
-    elements.plantRepresentativeRelationSource.textContent = documented?.basis === "cultivar-origin"
-      ? "研究拠点の地図" : "関連種を確認した資料";
+    elements.plantRepresentativeRelationSource.textContent = labels?.[2] ?? "関連種を確認した資料";
     if (documented) {
       elements.plantRepresentativeRelationSource.href = documented.evidenceUrl;
     } else if (related && representative) {
@@ -1550,8 +1557,7 @@
     }
     if (documented) {
       elements.plantRepresentativeNote.textContent = documented.note;
-      elements.plantRepresentativeSource.textContent = documented.basis === "cultivar-origin"
-        ? "作出地の出典" : "参照地点の出典";
+      elements.plantRepresentativeSource.textContent = labels[1];
       elements.plantRepresentativeSource.href = documented.sourceUrl;
     } else if (representative) {
       const basis = specimen ? "原産地域内の標本記録"
@@ -1614,7 +1620,7 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      const catalogVersion = "20261112-catalog-reference-places";
+      const catalogVersion = "20261112-catalog-audit";
       const catalog = await fetchCatalogJSON(`./data/plants.json?v=${catalogVersion}`);
       const plantFiles = catalog.plantFiles ?? [];
       if (!Array.isArray(plantFiles) || new Set(plantFiles).size !== plantFiles.length
@@ -1638,10 +1644,14 @@
       const categoryIds = new Set(catalog.categories.map((category) => category.id));
       const plantsById = new Map(catalog.plants.map((plant) => [plant.id, plant]));
       const referenceLocations = catalog.referenceLocations ?? {};
+      const referenceBases = new Map([
+        ["market-name", ["species", "cultivar-origin", "cultivar-reference"]],
+        ["species", ["native-specimen"]],
+        ["horticultural-group", ["group-origin"]],
+      ]);
       if (typeof referenceLocations !== "object" || Array.isArray(referenceLocations)
           || Object.entries(referenceLocations).some(([id, point]) =>
-            plantsById.get(id)?.taxonRank !== "market-name" || !point
-            || !["species", "cultivar-origin"].includes(point.basis)
+            !point || !referenceBases.get(plantsById.get(id)?.taxonRank)?.includes(point.basis)
             || !Number.isFinite(point.latitude) || Math.abs(point.latitude) > 85
             || !Number.isFinite(point.longitude) || Math.abs(point.longitude) > 180
             || typeof point.note !== "string" || !point.note.trim()

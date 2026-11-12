@@ -115,7 +115,8 @@ def all_coordinates(value: object):
 def verify_plant_chunk_loading() -> None:
     """A broken or incomplete chunk must never expose a partial plant list."""
     root = Path('/catalog-fixture')
-    main = {'schema':1, 'plants':[{'id':'first'}], 'plantFiles':['plants-2.json'], 'plantCount':2}
+    main = {'schema':1, 'plants':[{'id':'first','taxonRank':'species'}],
+            'plantFiles':['plants-2.json'], 'plantCount':2}
     extra = {'schema':1, 'plants':[{'id':'second'}]}
     def read(path, *args, **kwargs):
         if str(path) not in documents:
@@ -158,9 +159,12 @@ def verify_plant_chunk_loading() -> None:
         documents[str(root/'data/plants-2.json')] = {'schema':1,'plants':[market]}
         point = {'basis':'species', 'latitude':37, 'longitude':127, 'note':'Reference species range',
                  'sourceUrl':'https://example.org/range', 'evidenceUrl':'https://example.org/identity'}
-        documents[str(root/'data/plants.json')] = main | {'referenceLocations': {'retail': point}}
+        specimen = point | {'basis':'native-specimen'}
+        documents[str(root/'data/plants.json')] = main | {'referenceLocations': {'retail': point, 'first': specimen}}
         require(load_plant_catalog(root)['referenceLocations']['retail'] == point, 'documented point rejected')
-        for invalid in ({'missing': point}, {'retail': point | {'latitude': 90}}, {'retail': point | {'basis': 'guess'}}):
+        require(load_plant_catalog(root)['referenceLocations']['first'] == specimen, 'native specimen rejected')
+        for invalid in ({'missing': point}, {'retail': point | {'latitude': 90}}, {'retail': specimen},
+                        {'first': point}, {'retail': point | {'basis': 'guess'}}):
             documents[str(root/'data/plants.json')] = main | {'referenceLocations': invalid}
             try:
                 load_plant_catalog(root)
@@ -183,7 +187,7 @@ const source=app.match(/^  async function loadPlantCatalog\([\s\S]*?^  }/m)[0];
 const normalize=app.match(/^  function normalizePlantSearch\([\s\S]*?^  }/m)[0];
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
 const run=new AsyncFunction('fetch','state','elements','document','renderPlantResults','plantMatchesCategory','pickupById','PLANT_PICKUP_GROUPS',normalize+'\n'+source+'\nawait loadPlantCatalog();');
-const plant=id=>({id,name:id,scientificName:id,aliases:[],category:'garden',reference:{stars:4,reason:'provisional',sourceUrl:'https://example.org/garden'},sourceUrl:'https://example.org/taxon',regionCodes:['KOR'],nativeAreas:['Korea']});
+const plant=id=>({id,name:id,taxonRank:'species',scientificName:id,aliases:[],category:'garden',reference:{stars:4,reason:'provisional',sourceUrl:'https://example.org/garden'},sourceUrl:'https://example.org/taxon',regionCodes:['KOR'],nativeAreas:['Korea']});
 async function check(change={}) {
  const main={schema:1,plants:[plant('first')],plantFiles:['plants-2.json'],plantCount:2,categories:[{id:'tropical',label:'Tropical'},{id:'garden',label:'Garden'}],outlineFiles:['plant-outlines.json'],regionSource:{sha256:'fixed'}};
  const shard={schema:1,plants:[plant('second')]};
@@ -212,8 +216,12 @@ async function check(change={}) {
  const point={basis:'cultivar-origin',latitude:36,longitude:138,note:'Breeding site',sourceUrl:'https://example.org/source',evidenceUrl:'https://example.org/map'};
  assert.equal((await check({shard:{plants:[retail]}})).state.plants.length,2);
  assert.equal((await check({shard:{plants:[{...retail,relatedPlantId:'first',relatedEvidenceUrl:'https://example.org/plant'}]}})).state.plants.length,2);
- const documented=await check({main:{referenceLocations:{retail:point}},shard:{plants:[retail]}});
+ const specimen={...point,basis:'native-specimen'};
+ const documented=await check({main:{referenceLocations:{retail:point,first:specimen}},shard:{plants:[retail]}});
  assert.deepEqual(documented.state.plantReferenceLocations.get('retail'),point);
+ assert.deepEqual(documented.state.plantReferenceLocations.get('first'),specimen);
+ const wrongRank=await check({main:{referenceLocations:{first:point}},shard:{plants:[retail]}});
+ assert.equal(wrongRank.state.plants.length,0);
  const unsafePoint=await check({main:{referenceLocations:{retail:{...point,sourceUrl:'http://example.org'}}},shard:{plants:[retail]}});
  assert.equal(unsafePoint.state.plants.length,0);
  for(const mutation of [{regionCodes:['KOR']},{nativeAreas:['Korea']},{originKind:'native'},{sourceLabel:''},{relatedPlantId:'missing',relatedEvidenceUrl:'https://example.org/plant'},{relatedPlantId:'retail',relatedEvidenceUrl:'https://example.org/plant'}]) {
@@ -603,10 +611,12 @@ def verify_plant_catalog(app: str) -> None:
     require(set(re.findall(r'\.plant-result\[data-category="([^"]+)"\] \{ --plant-category-color:', styles))
             == expected, 'pickup and catalog genres must have background colors')
     optional = {'name','aliases','additionalCategories','marketEvidence'}
-    protected = [{k:v for k,v in p.items() if k not in optional} for p in plants[:5000]]
+    # The initial catalog lost 13 distinct publication entries in the catalog audit.
+    original_size = 4987
+    protected = [{k:v for k,v in p.items() if k not in optional} for p in plants[:original_size]]
     require(hashlib.sha256(json.dumps(protected, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
-            == 'a49c339a31332ca67111753d8e58d08b4018b7ef65a91ebd0bb7d6446997c945',
-            'original 5000 IDs, order, taxonomy, distribution, ratings and notes must remain unchanged')
+            == '768e5d0e227aae5d28ff8e972433b3bd18fda6b6fa698564b67ce1f3d026b2d3',
+            'remaining original IDs, order, taxonomy, distribution, ratings and notes must remain unchanged')
     native = [p for p in plants if p['originKind'] != 'unresolved']
     require(len({p['scientificName'] for p in native}) == len(native), 'duplicate accepted botanical taxa')
     require(catalog['plantCount'] == len(plants) and catalog['plantFiles'], 'record chunks or catalog count missing')
@@ -621,7 +631,7 @@ def verify_plant_catalog(app: str) -> None:
         'https://greensnap.co.jp/', 'https://www.hanahiroba.com/c/',
         'https://item.rakuten.co.jp/peteco-thegarden/', 'https://item.rakuten.co.jp/chanet3980/',
         'https://ofg-web-shop.com/?pid=')
-    additions = plants[5000:]
+    additions = plants[original_size:]
     require(all(p['checkedAt'] in ('2026-10-25','2026-10-26','2026-10-27') and p.get('marketEvidence')
                 and all(e['url'].startswith(market_sources) and e['sourceLabel']
                         and e['checkedAt'] in ('2026-10-25','2026-10-26','2026-10-27') for e in p['marketEvidence'])
@@ -662,7 +672,9 @@ def verify_plant_catalog(app: str) -> None:
             and wcvp['license'] == 'CC BY 3.0'
             and wcvp['sha256'] == 'd32ea2b3a85e489b14e83bcc9eae7274532e1d113753f7be290d4b2dfde573fa',
             'official WCVP fallback snapshot provenance missing')
-    require(sum(p['taxonRank'] == 'horticultural-group' for p in plants) == 17, 'familiar garden groups missing')
+    require({p['id'] for p in plants if p['taxonRank'] == 'horticultural-group'}
+            == {'garden-pansies', 'hybrid-hellebores', 'garden-strawberries', 'garden-lemons'},
+            'garden group list differs from the reviewed catalog')
     for plant in plants:
         require(plant['taxonRank'] in ('species','variety','subspecies','cultivar','horticultural-group','market-name'), 'invalid taxon rank')
         require(plant['originKind'] in ('native','cultigen','unresolved'), 'invalid origin kind')
@@ -785,7 +797,7 @@ def verify_plant_catalog(app: str) -> None:
             'Tillandsia research must refer to original species')
     select_body = re.search(r'^  function selectPlant\([\s\S]*?^  }', app, re.M).group(0)
     require('setView(' not in select_body and 'focusPlantOrigin(' not in select_body, 'plant selection must preserve view')
-    print(f'PLANT_CATALOG_OK {len(plants)} entries, original 5000 botanical core preserved, 17 genres, retail evidence, market/native separation, outlines')
+    print(f'PLANT_CATALOG_OK {len(plants)} entries, {original_size} original records, 17 genres, retail evidence, market/native separation, outlines')
 
 
 def main() -> None:
