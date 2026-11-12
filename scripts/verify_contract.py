@@ -163,8 +163,13 @@ def verify_plant_chunk_loading() -> None:
         documents[str(root/'data/plants.json')] = main | {'referenceLocations': {'retail': point, 'first': specimen}}
         require(load_plant_catalog(root)['referenceLocations']['retail'] == point, 'documented point rejected')
         require(load_plant_catalog(root)['referenceLocations']['first'] == specimen, 'native specimen rejected')
+        group_point = point | {'basis':'group-reference'}
+        documents[str(root/'data/plants-2.json')] = {'schema':1,'plants':[{'id':'group','taxonRank':'horticultural-group'}]}
+        documents[str(root/'data/plants.json')] = main | {'referenceLocations': {'group': group_point}}
+        require(load_plant_catalog(root)['referenceLocations']['group'] == group_point, 'outdoor cultivation reference rejected')
+        documents[str(root/'data/plants-2.json')] = {'schema':1,'plants':[market]}
         for invalid in ({'missing': point}, {'retail': point | {'latitude': 90}}, {'retail': specimen},
-                        {'first': point}, {'retail': point | {'basis': 'guess'}}):
+                        {'first': point}, {'retail': group_point}, {'retail': point | {'basis': 'guess'}}):
             documents[str(root/'data/plants.json')] = main | {'referenceLocations': invalid}
             try:
                 load_plant_catalog(root)
@@ -220,6 +225,10 @@ async function check(change={}) {
  const documented=await check({main:{referenceLocations:{retail:point,first:specimen}},shard:{plants:[retail]}});
  assert.deepEqual(documented.state.plantReferenceLocations.get('retail'),point);
  assert.deepEqual(documented.state.plantReferenceLocations.get('first'),specimen);
+ const group={...retail,id:'group',taxonRank:'horticultural-group'};
+ const groupPoint={...point,basis:'group-reference'};
+ assert.deepEqual((await check({main:{referenceLocations:{group:groupPoint}},shard:{plants:[group]}})).state.plantReferenceLocations.get('group'),groupPoint);
+ assert.equal((await check({main:{referenceLocations:{retail:groupPoint}},shard:{plants:[retail]}})).state.plants.length,0);
  const wrongRank=await check({main:{referenceLocations:{first:point}},shard:{plants:[retail]}});
  assert.equal(wrongRank.state.plants.length,0);
  const unsafePoint=await check({main:{referenceLocations:{retail:{...point,sourceUrl:'http://example.org'}}},shard:{plants:[retail]}});

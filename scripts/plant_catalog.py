@@ -51,7 +51,7 @@ def load_plant_catalog(root: Path) -> dict:
     reference_bases = {
         'market-name': ('species', 'cultivar-origin', 'cultivar-reference'),
         'species': ('native-specimen',),
-        'horticultural-group': ('group-origin',),
+        'horticultural-group': ('group-origin', 'group-reference'),
     }
     if not isinstance(points, dict) or any(
         not isinstance(point, dict)

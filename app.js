@@ -1541,6 +1541,7 @@
       "cultivar-reference": ["栽培・育成の参考地点を比較", "参照地点の出典", "地点を確認した資料"],
       "native-specimen": ["野生標本の地点を比較", "標本記録（GBIF）", "分布の出典"],
       "group-origin": ["成立地域の気候を比較", "成立地域の出典", "地点を確認した資料"],
+      "group-reference": ["屋外栽培地の気候を比較", "屋外栽培地の出典", "地点を確認した資料"],
     };
     const labels = documented && documentedLabels[documented.basis];
     elements.plantRepresentative.textContent = labels?.[0] ??
@@ -1647,7 +1648,7 @@
       const referenceBases = new Map([
         ["market-name", ["species", "cultivar-origin", "cultivar-reference"]],
         ["species", ["native-specimen"]],
-        ["horticultural-group", ["group-origin"]],
+        ["horticultural-group", ["group-origin", "group-reference"]],
       ]);
       if (typeof referenceLocations !== "object" || Array.isArray(referenceLocations)
           || Object.entries(referenceLocations).some(([id, point]) =>
