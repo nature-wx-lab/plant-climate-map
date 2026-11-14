@@ -18,6 +18,29 @@ def plant_catalog_files(root: Path) -> tuple[str, ...]:
     return ('data/plants.json',) + tuple('data/' + name for name in names)
 
 
+def reference_location_files(catalog: dict) -> tuple[str, ...]:
+    names = catalog.get('referenceLocationFiles', [])
+    if (not isinstance(names, list)
+            or names != [f'plant-reference-locations-{number}.json' for number in range(1, len(names) + 1)]):
+        raise ValueError('Invalid reference location chunk filenames')
+    return tuple('data/' + name for name in names)
+
+
+def load_reference_locations(root: Path, catalog: dict) -> dict:
+    points = catalog.get('referenceLocations', {})
+    if not isinstance(points, dict):
+        raise ValueError('Invalid documented plant reference location')
+    points = points.copy()
+    for relative in reference_location_files(catalog):
+        chunk = json.loads((root / relative).read_text())
+        if (not isinstance(chunk, dict) or chunk.get('schema') != catalog['schema']
+                or not isinstance(chunk.get('referenceLocations'), dict)
+                or points.keys() & chunk['referenceLocations'].keys()):
+            raise ValueError('Invalid or duplicate reference location chunk')
+        points.update(chunk['referenceLocations'])
+    return points
+
+
 def load_plant_catalog(root: Path) -> dict:
     files = plant_catalog_files(root)
     catalog = json.loads((root / files[0]).read_text())
@@ -47,13 +70,14 @@ def load_plant_catalog(root: Path) -> dict:
         if related and (related == plant['id'] or not by_id.get(related, {}).get('regionCodes')
                         or not str(plant.get('relatedEvidenceUrl', '')).startswith('https://')):
             raise ValueError('Invalid documented related taxon')
-    points = catalog.get('referenceLocations', {})
+    points = load_reference_locations(root, catalog)
     reference_bases = {
         'market-name': ('species', 'cultivar-origin', 'cultivar-reference'),
-        'species': ('native-specimen',),
+        'species': ('native-specimen', 'native-reference', 'cultivar-reference'),
+        'cultivar': ('cultivar-origin', 'cultivar-reference'),
         'horticultural-group': ('group-origin', 'group-reference'),
     }
-    if not isinstance(points, dict) or any(
+    if any(
         not isinstance(point, dict)
         or point.get('basis') not in reference_bases.get(by_id.get(plant_id, {}).get('taxonRank'), ())
         or type(point.get('latitude')) not in (int, float) or not -85 <= point['latitude'] <= 85
@@ -66,4 +90,5 @@ def load_plant_catalog(root: Path) -> dict:
     ):
         raise ValueError('Invalid documented plant reference location')
     catalog['plants'] = plants
+    catalog['referenceLocations'] = points
     return catalog

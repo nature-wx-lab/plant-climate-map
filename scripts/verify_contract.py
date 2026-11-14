@@ -15,13 +15,15 @@ from unittest.mock import patch
 
 from build_deployment_manifest import japan_files, place_search_files, plant_outline_files
 from verify_deployed_pages import EXPECTED_FILES as PUBLIC_FILES
-from plant_catalog import load_plant_catalog, plant_catalog_files
+from plant_catalog import load_plant_catalog, plant_catalog_files, reference_location_files
 
 
 ROOT = Path(__file__).resolve().parents[1]
 JAPAN_FILES = set(japan_files(ROOT))
 PLANT_OUTLINE_FILES = set(plant_outline_files(ROOT))
-PLANT_CATALOG_FILES = set(plant_catalog_files(ROOT))
+PLANT_CATALOG_FILES = set(plant_catalog_files(ROOT)) | set(
+    reference_location_files(json.loads((ROOT / 'data/plants.json').read_text()))
+)
 PLACE_SEARCH_FILES = set(place_search_files(ROOT))
 CLIMATE_LAYER_KEYS = ("temperature", "precipitation", "humidity", "solar")
 CLIMATE_LAYER_PERIODS = ("annual",) + tuple(f"{month:02d}" for month in range(1, 13))
@@ -125,6 +127,21 @@ def verify_plant_chunk_loading() -> None:
     documents = {str(root/'data/plants.json'):main, str(root/'data/plants-2.json'):extra}
     with patch.object(Path, 'read_text', read):
         require([p['id'] for p in load_plant_catalog(root)['plants']] == ['first','second'], 'chunk order lost')
+        location_chunk = str(root/'data/plant-reference-locations-1.json')
+        documents[str(root/'data/plants.json')] = main | {'referenceLocationFiles':['plant-reference-locations-1.json']}
+        documents[location_chunk] = {'schema':1, 'referenceLocations':{
+            'first': {'basis':'native-reference', 'latitude':35, 'longitude':135,
+                      'note':'Documented habitat', 'sourceUrl':'https://example.org/species',
+                      'evidenceUrl':'https://example.org/place'}}}
+        require('first' in load_plant_catalog(root)['referenceLocations'], 'split reference location missing')
+        documents[str(root/'data/plants.json')]['referenceLocations'] = documents[location_chunk]['referenceLocations']
+        try:
+            load_plant_catalog(root)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('duplicate split reference location accepted')
+        del documents[location_chunk]
         for mutation in ({'plantFiles':['../private.json']}, {'plantFiles':['plants-2.json','plants-2.json']},
                          {'plantFiles':[{}]}, {'plantCount':3}):
             documents[str(root/'data/plants.json')] = main | mutation
@@ -202,6 +219,9 @@ async function check(change={}) {
  const fetch=async url=>{calls.push(url);let data;
   if(url.includes('/plants.json?'))data=main;
   else if(url.includes('/plants-2.json?')){if(change.missing)return {ok:false,status:404};data=shard;}
+  else if(url.includes('/plant-reference-locations-1.json?')){
+   if(!change.locations)return {ok:false,status:404};data={schema:1,referenceLocations:change.locations};
+  }
   else if(url.includes('/plant-outlines.json?'))data={schema:1,sourceSha256:'fixed',plantKeys:{first:'KOR',second:'KOR'},outlines:{KOR:{rings:[]}}};
   else throw Error('unexpected fetch '+url);
   return {ok:true,json:async()=>structuredClone(data)};
@@ -223,6 +243,10 @@ async function check(change={}) {
  assert.equal((await check({shard:{plants:[{...retail,relatedPlantId:'first',relatedEvidenceUrl:'https://example.org/plant'}]}})).state.plants.length,2);
  const specimen={...point,basis:'native-specimen'};
  const documented=await check({main:{referenceLocations:{retail:point,first:specimen}},shard:{plants:[retail]}});
+ const split={referenceLocationFiles:['plant-reference-locations-1.json']};
+ assert.deepEqual((await check({main:split,locations:{first:specimen}})).state.plantReferenceLocations.get('first'),specimen);
+ assert.equal((await check({main:split})).state.plants.length,0);
+ assert.equal((await check({main:{...split,referenceLocations:{first:specimen}},locations:{first:specimen}})).state.plants.length,0);
  assert.deepEqual(documented.state.plantReferenceLocations.get('retail'),point);
  assert.deepEqual(documented.state.plantReferenceLocations.get('first'),specimen);
  const group={...retail,id:'group',taxonRank:'horticultural-group'};

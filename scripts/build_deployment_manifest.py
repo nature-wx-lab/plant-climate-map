@@ -10,7 +10,7 @@ import re
 import shutil
 from pathlib import Path
 
-from plant_catalog import plant_catalog_files
+from plant_catalog import plant_catalog_files, reference_location_files
 
 
 CLIMATE_LAYER_FILES = tuple(
@@ -104,8 +104,10 @@ def main() -> None:
     destination.mkdir(parents=True)
 
     files: dict[str, dict[str, int | str]] = {}
+    catalog = json.loads((root / 'data/plants.json').read_text())
     for relative in tuple(dict.fromkeys(DEPLOY_FILES + japan_files(root) + plant_outline_files(root)
-                                        + plant_catalog_files(root) + place_search_files(root))):
+                                        + plant_catalog_files(root) + reference_location_files(catalog)
+                                        + place_search_files(root))):
         source = root / relative
         if not source.is_file() or source.is_symlink():
             raise SystemExit(f"invalid deploy source: {relative}")

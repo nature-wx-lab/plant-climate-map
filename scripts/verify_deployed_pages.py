@@ -14,7 +14,7 @@ import urllib.request
 from pathlib import Path
 
 from build_deployment_manifest import japan_files, place_search_files, plant_outline_files
-from plant_catalog import plant_catalog_files
+from plant_catalog import plant_catalog_files, reference_location_files
 
 
 CLIMATE_LAYER_FILES = {
@@ -45,7 +45,9 @@ EXPECTED_FILES = {
     "sitemap.xml",
     "styles.css",
     "data/climate-layers/manifest.json",
-} | CLIMATE_LAYER_FILES | set(japan_files(ROOT)) | set(plant_outline_files(ROOT)) | set(plant_catalog_files(ROOT)) | set(place_search_files(ROOT))
+} | CLIMATE_LAYER_FILES | set(japan_files(ROOT)) | set(plant_outline_files(ROOT)) | set(plant_catalog_files(ROOT)) | set(place_search_files(ROOT)) | set(
+    reference_location_files(json.loads((ROOT / 'data/plants.json').read_text()))
+)
 
 
 def request(url: str) -> urllib.request.Request:

@@ -1540,6 +1540,7 @@
       "cultivar-origin": ["作出・発見地の気候を比較", "作出・発見地の出典", "地点を確認した資料"],
       "cultivar-reference": ["栽培・育成の参考地点を比較", "参照地点の出典", "地点を確認した資料"],
       "native-specimen": ["野生標本の地点を比較", "標本記録の出典", "分布の出典"],
+      "native-reference": ["自生を確認した地域の気候を比較", "自生記録の出典", "地点を確認した資料"],
       "group-origin": ["成立地域の気候を比較", "成立地域の出典", "地点を確認した資料"],
       "group-reference": ["屋外栽培地の気候を比較", "屋外栽培地の出典", "地点を確認した資料"],
     };
@@ -1621,7 +1622,7 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      const catalogVersion = "20261112-catalog-audit";
+      const catalogVersion = "20261114-catalog-audit-ver8";
       const catalog = await fetchCatalogJSON(`./data/plants.json?v=${catalogVersion}`);
       const plantFiles = catalog.plantFiles ?? [];
       if (!Array.isArray(plantFiles) || new Set(plantFiles).size !== plantFiles.length
@@ -1644,14 +1645,30 @@
       };
       const categoryIds = new Set(catalog.categories.map((category) => category.id));
       const plantsById = new Map(catalog.plants.map((plant) => [plant.id, plant]));
-      const referenceLocations = catalog.referenceLocations ?? {};
+      const inlineLocations = catalog.referenceLocations ?? {};
+      const locationFiles = catalog.referenceLocationFiles ?? [];
+      if (typeof inlineLocations !== "object" || Array.isArray(inlineLocations)
+          || !Array.isArray(locationFiles)
+          || locationFiles.some((name, index) => name !== `plant-reference-locations-${index + 1}.json`)) {
+        throw new Error("植物の参照地点ファイル名または形式が不正です");
+      }
+      const locationChunks = await Promise.all(locationFiles.map((name) => fetchCatalogJSON(`./data/${name}?v=${catalogVersion}`)));
+      const referenceLocations = { ...inlineLocations };
+      for (const chunk of locationChunks) {
+        const points = chunk?.referenceLocations;
+        if (chunk?.schema !== catalog.schema || !points || typeof points !== "object"
+            || Array.isArray(points) || Object.keys(points).some((id) => Object.prototype.hasOwnProperty.call(referenceLocations, id))) {
+          throw new Error("植物の参照地点ファイルの形式または識別子が不正です");
+        }
+        Object.assign(referenceLocations, points);
+      }
       const referenceBases = new Map([
         ["market-name", ["species", "cultivar-origin", "cultivar-reference"]],
-        ["species", ["native-specimen"]],
+        ["species", ["native-specimen", "native-reference", "cultivar-reference"]],
+        ["cultivar", ["cultivar-origin", "cultivar-reference"]],
         ["horticultural-group", ["group-origin", "group-reference"]],
       ]);
-      if (typeof referenceLocations !== "object" || Array.isArray(referenceLocations)
-          || Object.entries(referenceLocations).some(([id, point]) =>
+      if (Object.entries(referenceLocations).some(([id, point]) =>
             !point || !referenceBases.get(plantsById.get(id)?.taxonRank)?.includes(point.basis)
             || !Number.isFinite(point.latitude) || Math.abs(point.latitude) > 85
             || !Number.isFinite(point.longitude) || Math.abs(point.longitude) > 180
