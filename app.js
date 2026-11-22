@@ -1622,7 +1622,7 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      const catalogVersion = "20261115-catalog-audit-ver10";
+      const catalogVersion = "20261122-catalog-audit-ver12";
       const catalog = await fetchCatalogJSON(`./data/plants.json?v=${catalogVersion}`);
       const plantFiles = catalog.plantFiles ?? [];
       if (!Array.isArray(plantFiles) || new Set(plantFiles).size !== plantFiles.length
