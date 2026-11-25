@@ -647,6 +647,12 @@ def verify_plant_catalog(app: str) -> None:
     # The initial catalog lost 13 distinct publication entries in the catalog audit.
     original_size = 4987
     protected = [{k:v for k,v in p.items() if k not in optional} for p in plants[:original_size]]
+    scilla = next(p for p in protected if p['id'] == 'othocallis-mischtschenkoana')
+    require((scilla['scientificName'], scilla['taxonAuthor'], scilla['sourceUrl']) == (
+        'Scilla mischtschenkoana', 'Grossh.', 'https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:540920-1'
+    ), 'Scilla accepted name and source must agree')
+    scilla.update(scientificName='Othocallis mischtschenkoana', taxonAuthor='(Grossh.) Speta',
+                  sourceUrl='https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:1003482-1')
     require(hashlib.sha256(json.dumps(protected, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
             == '768e5d0e227aae5d28ff8e972433b3bd18fda6b6fa698564b67ce1f3d026b2d3',
             'remaining original IDs, order, taxonomy, distribution, ratings and notes must remain unchanged')
